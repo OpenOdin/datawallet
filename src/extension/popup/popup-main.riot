@@ -1,0 +1,83 @@
+<popup-main>
+    <div id="mainContent" class="block min-w-[640px] min-h-[480px] bg-bakgrundselement">
+        <div id="menu" class="grid grid-cols-2 gap-1">
+            <div class="{state.menu.current==="connection" ? "bg-bakgrund-3 text-rubriker" : "bg-rubriker text-lankarhover"}">
+                <button href="#" onclick={ menuConnections }
+                    class="{addClass("active", state.menu.current==="connections")} {state.menu.current==="connection" ? "strong text-lg" : ""} rounded-t-lg">
+                    Connections
+                </button>
+            </div>
+
+            <div class="{state.menu.current==="wallets" ? "bg-bakgrund-3 text-rubriker" : "bg-rubriker text-lankarhover"}">
+                <button href="#" onclick={ menuWallets }
+                    class="{addClass("active", state.menu.current==="wallets")} {state.menu.current==="wallets" ? "strong text-lg" : ""} rounded-t-lg">
+                    Wallets
+                </button>
+            </div>
+        </div>
+
+        <popup-connection if={state.menu.current==="connection"} rpc={props.rpc} tabId={props.tabId}></popup-connection>
+        <popup-wallets if={state.menu.current==="wallets"} rpc={props.rpc}></popup-wallets>
+    </div>
+
+    <script>
+        import * as riot from "riot";
+
+        /**
+         * @param props {rpc, tabId}
+         */
+        export default {
+            onBeforeMount(props, state) {
+                this.state = {
+                    menu: {
+                        show: false,
+                        current: "connection",
+                    },
+                };
+            },
+            menuWallets(e) {
+                this.update({
+                    menu: {...this.state.menu, show: false, current: "wallets"},
+                });
+            },
+            menuConnections(e) {
+                this.update({
+                    menu: {...this.state.menu, show: false, current: "connection"},
+                });
+            },
+            addClass(className, isActive) {
+                return isActive ? className : "";
+            }
+        }
+    </script>
+    <style>
+        /*#mainContent {
+            display: block;
+            min-width: 640px;
+            min-height: 480px;
+            background-color: #9999aa;
+            border: 1px solid #333377;
+            padding: 3px;
+        }
+        button {
+            display: block;
+            border: solid 1px black;
+        }
+        #menu {
+            display: block;
+            min-width: 150px;
+            min-height: 80px;
+        }
+        #menu a {
+            display: block;
+            float: left;
+            color: blue;
+        }
+        #menu a.active {
+            color: purple;
+        }*/
+        .non-visible {
+            visibility: hidden;
+        }
+    </style>
+</popup-main>
