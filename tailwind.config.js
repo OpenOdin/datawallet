@@ -1,5 +1,6 @@
 module.exports = {
     content: [
+        "./src/extension/popup/*.{html,js,riot}",
         "./src/*.{html,js,riot}",
         //"./src/*.{html,js}",
         //"./dist/*.{html,js}",
