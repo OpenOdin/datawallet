@@ -8,26 +8,26 @@ import {
 
 declare const browser: any;
 declare const chrome: any;
-declare const localStorage: Storage;
 
-const browser2 = typeof(browser) !== "undefined" ? browser : chrome;
+const browserHandle = typeof(browser) !== "undefined" ? browser : chrome;
 
-const service = new BackgroundService(browser2, localStorage);
+const service = new BackgroundService();
 
 function connected(port: any) {
     const [portName, rpcId]  = port.name.split("_");
 
-    if (portName === "popup-to-background") {
+    if (portName === "openodin-popup-to-background") {
         const postMessage = (message: any) => {
             port.postMessage(message);
         };
 
         port.onDisconnect.addListener( () => {
             // Closes all resources.
+            //
             service.unregisterPopupRPC(rpc);
         });
 
-        const listenMessage = (listener: Function) => {
+        const listenMessage = (listener: (message: any) => void) => {
             port.onMessage.addListener( (message: any) => {
                 listener(message);
             });
@@ -37,17 +37,18 @@ function connected(port: any) {
 
         service.registerPopupRPC(rpc);
     }
-    else if (portName === "content-to-background") {
+    else if (portName === "openodin-content-to-background") {
         const postMessage = (message: any) => {
             port.postMessage(message);
         };
 
         port.onDisconnect.addListener( () => {
-            // Closes all resources.
+            // Closes all resources and RPC.
+            //
             service.unregisterContentScriptRPC(rpc);
         });
 
-        const listenMessage = (listener: Function) => {
+        const listenMessage = (listener: (message: any) => void) => {
             port.onMessage.addListener( (message: any) => {
                 listener(message);
             });
@@ -55,8 +56,8 @@ function connected(port: any) {
 
         const rpc = new RPC(postMessage, listenMessage, rpcId);
 
-        service.registerContentScriptRPC(rpc);
+        service.registerContentScriptRPC(rpc, port);
     }
 }
 
-browser2.runtime.onConnect.addListener(connected);
+browserHandle.runtime.onConnect.addListener(connected);

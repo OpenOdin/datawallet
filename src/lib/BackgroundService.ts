@@ -1,6 +1,7 @@
 import {
     OpenOdinRPCServer,
     Crypto,
+    RPC,
 } from "openodin";
 
 import {
@@ -13,31 +14,59 @@ import {
 declare const browser: any;
 declare const chrome: any;
 
+type Tab = {
+    url?: string,
+    title?: string,
+    id: number,
+};
+
 export class BackgroundService {
     protected tabsState: TabsState = {};
-    protected browser: any;
-    protected authRequests: Function[] = [];
+    protected browserHandle: typeof browser | typeof chrome;
+    protected authRequests: ((walletKeyPairs?: WalletKeyPair[]) => void)[] = [];
     protected authRequestIdCounter = 0;
     protected vaults: Vaults = {};
-    protected storageAPI: Storage;
-    protected keyManagers: {[rpcId: string]: OpenOdinRPCServer} = {};
+    protected openOdinServers: {[rpcId: string]: OpenOdinRPCServer} = {};
 
-    constructor(browser: any, storageAPI: Storage) {
-        this.browser = browser;
-        this.storageAPI = storageAPI;
+    constructor() {
+        this.browserHandle = typeof(browser) !== "undefined" ? browser : chrome;
 
         this.loadVaults();
     }
 
-    public registerContentScriptRPC(rpc: any) {
-        const keyManager = new OpenOdinRPCServer(rpc);
+    public registerContentScriptRPC(rpc: RPC, port: any) {
+        // When running in Chrome we need to run single threaded,
+        // the service worker is the thread.
+        //
+        const singleThreaded = typeof(browser) === "undefined";
+        const nrOfWorkers = 1;
 
-        this.keyManagers[rpc.getId()] = keyManager;
+        const openOdinRPCServer = new OpenOdinRPCServer(rpc, nrOfWorkers, singleThreaded);
 
-        keyManager.onAuth( async () => {
+        this.openOdinServers[rpc.getId()] = openOdinRPCServer;
+
+        openOdinRPCServer.onAuth( async () => {
             const tabId = await this.getTabId();
 
-            let resolve: Function | undefined;
+            if (tabId === undefined) {
+                return {
+                    keyPairs: [],
+                    error: "Could get tabId of active tab",
+                };
+            }
+
+            // This could happen if extension got unloaded but client sent message.
+            //
+            if (!this.tabsState[tabId]) {
+                port.disconnect();
+
+                return {
+                    keyPairs: [],
+                    error: "Connection closed, Datawallet needs to be reopened",
+                };
+            }
+
+            let resolve: (keyPairs?: WalletKeyPair[]) => void | undefined;
 
             // Resolve any prior auth request as denied.
             this.denyAuth(tabId);
@@ -46,7 +75,7 @@ export class BackgroundService {
 
             const authRequestId = this.authRequestIdCounter++;
 
-            const p = new Promise( (resolveInner) => {
+            const p = new Promise<WalletKeyPair[] | undefined>( (resolveInner) => {
                 resolve = resolveInner;
 
                 this.tabsState[tabId].authRequestId = authRequestId;
@@ -62,17 +91,17 @@ export class BackgroundService {
         });
     }
 
-    public unregisterContentScriptRPC(rpc: any) {
-        const keyManager = this.keyManagers[rpc.getId()];
-
-        keyManager?.close();
-
-        delete this.keyManagers[rpc.getId()];
-
+    public unregisterContentScriptRPC(rpc: RPC) {
         rpc.close();
+
+        const openOdinRPCServer = this.openOdinServers[rpc.getId()];
+
+        openOdinRPCServer?.close();
+
+        delete this.openOdinServers[rpc.getId()];
     }
 
-    public registerPopupRPC(rpc: any) {
+    public registerPopupRPC(rpc: RPC) {
         rpc.onCall("registerTab", this.registerTab);
         rpc.onCall("getState", this.getState);
         rpc.onCall("acceptAuth", this.acceptAuth);
@@ -82,12 +111,16 @@ export class BackgroundService {
         rpc.onCall("newKeyPair", this.newKeyPair);
     }
 
-    public unregisterPopupRPC(rpc: any) {
+    public unregisterPopupRPC(rpc: RPC) {
         rpc.close();
     }
 
     protected async loadVaults() {
-        this.vaults = JSON.parse((await this.storageAPI.getItem("vaults")) ?? "{}");
+        const key = "vaults";
+
+        const json = (await this.browserHandle.storage.local.get([key]))[key] ?? "{}";
+
+        this.vaults = JSON.parse(json);
     }
 
     protected getVaults = async (): Promise<Vaults> => {
@@ -97,10 +130,14 @@ export class BackgroundService {
     protected saveVault = async (vault: Vault): Promise<boolean> => {
         try {
             this.vaults[vault.id] = vault;
-            await this.storageAPI.setItem("vaults", JSON.stringify(this.vaults));
+
+            const value = JSON.stringify(this.vaults);
+
+            await this.browserHandle.storage.local.set({vaults: value});
         }
         catch(e) {
-            console.error("Could not store vault", e);
+            console.error(e);
+
             return false;
         }
 
@@ -108,7 +145,7 @@ export class BackgroundService {
     };
 
     protected denyAuth = (tabId: number) => {
-        const authRequestId = this.tabsState[tabId].authRequestId;
+        const authRequestId = this.tabsState[tabId]?.authRequestId;
 
         if (authRequestId === undefined) {
             return;
@@ -147,65 +184,49 @@ export class BackgroundService {
     };
 
     protected registerTab = async (tabId: number) => {
-        const tabTitle = await this.getTabTitle();
+        const title = await this.getTabTitle() ?? "<unknown title>";
+        const url = await this.getTabURL() ?? "<unknown URL>";
 
         if (!this.tabsState[tabId]) {
             this.tabsState[tabId] = {
                 activated: false,
                 authed: false,
                 authRequestId: undefined,
-                title: `${tabTitle}`,
-                url: window.location.href,
+                title,
+                url,
             };
         }
 
         try {
-            await this.browser.tabs.executeScript({file: "/content-script.js"});
+            await this.browserHandle.scripting.executeScript({files: ["/content-script.js"],
+                target: {tabId}});
         }
         catch(e) {
-            console.debug("Can't interact with tab", e);
+            console.error(e);
+
             return;
         }
 
         this.tabsState[tabId].activated = true;
     };
 
-    protected async getTabId(): Promise<number> {
-        let tabId;
-
-        if (typeof(browser) !== "undefined") {
-            tabId = (await browser.tabs.query({active: true, currentWindow: true}))[0].id;
-        }
-        else {
-            const p = new Promise( (resolve) => {
-                chrome.tabs.query({active: true, currentWindow: true}, (tab: any) => {
-                    resolve(tab.id);
-                });
-            });
-
-            tabId = await p;
-        }
-
-        return tabId;
+    protected async getTabTitle(): Promise<string | undefined> {
+        const tab = await this.getTab();
+        return tab?.title;
     }
 
-    protected async getTabTitle(): Promise<number> {
-        let tabTitle;
+    protected async getTabURL(): Promise<string | undefined> {
+        const tab = await this.getTab();
+        return tab?.url;
+    }
 
-        if (typeof(browser) !== "undefined") {
-            tabTitle = (await browser.tabs.query({active: true, currentWindow: true}))[0].title;
-        }
-        else {
-            const p = new Promise( (resolve) => {
-                chrome.tabs.query({active: true, currentWindow: true}, (tab: any) => {
-                    resolve(tab.title);
-                });
-            });
+    protected async getTabId(): Promise<number | undefined> {
+        const tab = await this.getTab();
+        return tab?.id;
+    }
 
-            tabTitle = await p;
-        }
-
-        return tabTitle;
+    protected async getTab(): Promise<Tab | undefined> {
+        return (await this.browserHandle.tabs.query({active: true, currentWindow: true}))[0];
     }
 
     protected newKeyPair = async (): Promise<WalletKeyPair> => {
