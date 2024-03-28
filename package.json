@@ -1,15 +1,12 @@
 {
     "name": "datawallet",
     "version": "0.3.0",
-    "description": "Official OpenOdin Data Wallet",
+    "description": "Official OpenOdin DataWallet",
     "private": false,
     "scripts": {
-        "build": "rm -rf ./dist/* ./build && npm run tsc && npm run build-background-script && npm run build-content-script && npm run build-popup && npm run copy-extension",
         "tsc": "npx tsc",
-        "build-background-script": "npx browserify --s module -i ./node_modules/openodin/build/src/datastreamer/FileStreamWriter.js -i ./node_modules/openodin/build/src/datastreamer/FileStreamReader.js -i sqlite3 -i postgresql-client ./node_modules/openodin/build/src/util/RPC.js -o ./build/lib/RPC.js && npx browserify --s module -i ./node_modules/openodin/build/src/datastreamer/FileStreamWriter.js -i ./node_modules/openodin/build/src/datastreamer/FileStreamReader.js -i sqlite3 -i postgresql-client ./build/extension/background-script.js -o ./dist/background-script.js && cp ./node_modules/openodin/build/src/signatureoffloader/signatureOffloader-worker-browser.js ./dist",
-        "build-content-script": "npx browserify --s module  -i ./node_modules/openodin/build/src/datastreamer/FileStreamWriter.js -i ./node_modules/openodin/build/src/datastreamer/FileStreamReader.js -i sqlite3 -i postgresql-client ./build/extension/content-script.js -o ./dist/content-script.js",
-        "build-popup": "npx webpack -c ./webpack.popup-config.js && cp ./src/extension/popup/popup.html ./dist",
-        "copy-extension": "cp ./src/extension/*.html ./src/extension/manifest.json ./dist && cp -r ./src/extension/icons ./dist",
+        "build-firefox": "./build-firefox.sh",
+        "build-chrome": "./build-chrome.sh",
         "test": "echo \"Error: no test specified\" && exit 1",
         "lint": "npx eslint ./src"
     },

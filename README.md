@@ -11,7 +11,9 @@ Currently the Data Wallet works in Mozilla Firefox and needs to be sideloaded as
 ## Build
 ```sh
 npm i
-npm run build
+npm run build-firefox
+# or, for chrome, do:
+npm run build-chrome
 ```
 
 Open `./dist/manifest.json` as a temporary extension in developer mode.  
