@@ -5,8 +5,8 @@
     "private": false,
     "scripts": {
         "tsc": "npx tsc",
-        "build-firefox": "./build-firefox.sh",
-        "build-chrome": "./build-chrome.sh",
+        "build-firefox": "sh build-firefox.sh",
+        "build-chrome": "sh build-chrome.sh",
         "test": "echo \"Error: no test specified\" && exit 1",
         "lint": "npx eslint ./src"
     },
