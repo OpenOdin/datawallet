@@ -13,7 +13,7 @@ riot.register("popup-wallets", PopupWallets);
 import "./popup.css";
 
 //eslint-disable-next-line no-undef
-const browser2 = typeof(browser) !== "undefined" ? browser : chrome;
+const browserHandle = typeof(browser) !== "undefined" ? browser : chrome;
 
 async function main() {
     const popupElement = document.querySelector("#popup");
@@ -26,7 +26,7 @@ async function main() {
     const rpcId = "0";  // This is not required to be random from popup.
 
     // Connect to background-script
-    const port = browser2.runtime.connect({ name: `popup-to-background_${rpcId}` });
+    const port = browserHandle.runtime.connect({ name: `openodin-popup-to-background_${rpcId}` });
 
     const postMessage = (message) => {
         port.postMessage(message);
@@ -48,26 +48,14 @@ async function main() {
     riot.component(PopupMain)(popupElement, {rpc, tabId});
 }
 
+
 async function getTabId() {
-    let tabId;
+    const tab = await getTab();
+    return tab?.id;
+}
 
-    //eslint-disable-next-line no-undef
-    if (typeof(browser) !== "undefined") {
-        //eslint-disable-next-line no-undef
-        tabId = (await browser.tabs.query({active: true, currentWindow: true}))[0].id;
-    }
-    else {
-        const p = new Promise( (resolve) => {
-            //eslint-disable-next-line no-undef
-            chrome.tabs.query({active: true, currentWindow: true}, tab => {
-                resolve(tab.id);
-            });
-        });
-
-        tabId = await p;
-    }
-
-    return tabId;
+async function getTab() {
+    return (await browserHandle.tabs.query({active: true, currentWindow: true}))[0];
 }
 
 main();
