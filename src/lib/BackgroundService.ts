@@ -51,7 +51,7 @@ export class BackgroundService {
             if (tabId === undefined) {
                 return {
                     keyPairs: [],
-                    error: "Could get tabId of active tab",
+                    error: "Could not get tabId of active tab",
                 };
             }
 
