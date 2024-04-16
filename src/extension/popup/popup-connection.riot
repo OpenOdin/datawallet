@@ -46,6 +46,8 @@
                 this.updateState();
 
                 this.getVaults();
+
+                props.rpc.onCall("beginAuth", () => this.updateState() );
             },
             getVaults() {
                 const tabsState = this.props.rpc.call("getVaults").then( vaults => {

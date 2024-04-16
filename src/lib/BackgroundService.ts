@@ -28,6 +28,10 @@ export class BackgroundService {
     protected vaults: Vaults = {};
     protected openOdinServers: {[rpcId: string]: OpenOdinRPCServer} = {};
 
+    // This is set when the popup is open
+    //
+    protected popupRPC?: RPC;
+
     constructor() {
         this.browserHandle = typeof(browser) !== "undefined" ? browser : chrome;
 
@@ -45,6 +49,8 @@ export class BackgroundService {
 
         this.openOdinServers[rpc.getId()] = openOdinRPCServer;
 
+        // On begin auth process.
+        //
         openOdinRPCServer.onAuth( async () => {
             const tabId = await this.getTabId();
 
@@ -81,6 +87,8 @@ export class BackgroundService {
                 this.tabsState[tabId].authRequestId = authRequestId;
             });
 
+            this.popupRPC?.call("beginAuth");
+
             const keyPairs = (await p) as WalletKeyPair[] | undefined;
             const error = keyPairs === undefined ? "Auth denied" : undefined;
 
@@ -109,9 +117,15 @@ export class BackgroundService {
         rpc.onCall("getVaults", this.getVaults);
         rpc.onCall("saveVault", this.saveVault);
         rpc.onCall("newKeyPair", this.newKeyPair);
+
+        this.popupRPC = rpc;
     }
 
     public unregisterPopupRPC(rpc: RPC) {
+        if (this.popupRPC === rpc) {
+            delete this.popupRPC;
+        }
+
         rpc.close();
     }
 

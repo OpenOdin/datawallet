@@ -38,22 +38,39 @@ export class Wallet {
         }
     }
 
+    /**
+     * Load wallet from blob
+     * @throws if decryption fails
+     */
     public load(vault: Vault) {
         this.config = this.decrypt(vault.blob);
         this.title = vault.title;
         this.id = vault.id;
     }
 
-    protected decrypt(blob: string): WalletConfig {
-        // TODO symmetric decryption
+    /**
+     * Attempts to decrypt wallet using this.password
+     * @throws if wallet cannot be decrypted.
+     */
+    protected decrypt(encryptedBlob: string): WalletConfig {
+        // TODO symmetric decryption of blob using this.password
+        const blob = encryptedBlob;
+
         const config = JSON.parse(blob);
         return config;
     }
 
+    /**
+     * Encrypt the wallet and return it as string
+     * @returns encryped string
+     */
     protected encrypt(config: WalletConfig): string {
-        // TODO symmetric encryption of config
         const blob = JSON.stringify(config);
-        return blob;
+
+        // TODO symmetric encryption of blob using this.password
+        const encryptedBlob = blob;
+
+        return encryptedBlob;
     }
 
     public getTitle(): string {
