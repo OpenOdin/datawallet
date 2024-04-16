@@ -34,6 +34,12 @@
                         current: "connection",
                     },
                 };
+
+                props.rpc.onCall("unregisterTab", (tabId) => {
+                    if (tabId === props.tabId) {
+                        this.update();
+                    }
+                });
             },
             menuWallets(e) {
                 this.update({
