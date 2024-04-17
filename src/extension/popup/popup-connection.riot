@@ -23,6 +23,9 @@
                 <button onclick={ denyAuth }>Deny auth</button>
             </div>
         </div>
+        <div if={state.tabState.error}>
+            <p> <span class="font-extrabold">{state.tabState.error}</span></p>
+        </div>
         <div if={!state.tabState.activated}>
             <p> <span class="font-extrabold">{state.tabState.title}</span> tab cannot be used with the DataWallet </p>
         </div>

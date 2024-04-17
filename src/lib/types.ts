@@ -20,6 +20,7 @@ export type TabState = {
     authed: boolean,
     title: string,
     url: string,
+    error?: string,
 };
 
 export type TabsState = {

@@ -61,9 +61,14 @@ export class BackgroundService {
                 };
             }
 
+            port.onDisconnect.addListener( () => {
+                this.unregisterTab(tabId);
+            });
+
+            const tabState = this.tabsState[tabId];
             // This could happen if extension got unloaded but client sent message.
             //
-            if (!this.tabsState[tabId]) {
+            if (!tabState) {
                 port.disconnect();
 
                 return {
@@ -71,6 +76,8 @@ export class BackgroundService {
                     error: "Connection closed, Datawallet needs to be reopened",
                 };
             }
+
+            const url = tabState.url;
 
             let resolve: (keyPairs?: WalletKeyPair[]) => void | undefined;
 
@@ -93,6 +100,7 @@ export class BackgroundService {
             const error = keyPairs === undefined ? "Auth denied" : undefined;
 
             return {
+                url,
                 keyPairs,
                 error,
             };
@@ -198,10 +206,21 @@ export class BackgroundService {
     };
 
     protected registerTab = async (tabId: number) => {
-        const title = await this.getTabTitle() ?? "<unknown title>";
-        const url = await this.getTabURL() ?? "<unknown URL>";
+        const title = await this.getTabTitle();
 
-        if (!this.tabsState[tabId]) {
+        if (title === undefined || title === null) {
+            throw new Error("Could not get title of tab");
+        }
+
+        const url = await this.getTabURL();
+
+        if (!url) {
+            throw new Error("Could not get URL of tab");
+        }
+
+        const tabState = this.tabsState[tabId];
+
+        if (!tabState) {
             this.tabsState[tabId] = {
                 activated: false,
                 authed: false,
@@ -210,28 +229,56 @@ export class BackgroundService {
                 url,
             };
         }
+        else {
+            if (tabState.url !== url) {
+                this.tabsState[tabId].activated = false;
+
+                this.tabsState[tabId].error = "Error: Tab has changed URL, please open app in new tab for the DataWallet to accept it.";
+
+                return;
+            }
+
+            this.tabsState[tabId].error = undefined;
+        }
 
         try {
             await this.browserHandle.scripting.executeScript({files: ["/content-script.js"],
                 target: {tabId}});
+
+            this.tabsState[tabId].activated = true;
         }
         catch(e) {
+            this.tabsState[tabId].activated = false;
+            this.tabsState[tabId].error = "Error: Could not execute content script";
+
             console.error(e);
-
-            return;
         }
-
-        this.tabsState[tabId].activated = true;
     };
+
+    protected unregisterTab(tabId: number) {
+        delete this.tabsState[tabId];
+
+        this.popupRPC?.call("unregisterTab", [tabId]);
+    }
 
     protected async getTabTitle(): Promise<string | undefined> {
         const tab = await this.getTab();
         return tab?.title;
     }
 
+    /**
+     * @returns tab URL without query or hash parameters.
+     */
     protected async getTabURL(): Promise<string | undefined> {
         const tab = await this.getTab();
-        return tab?.url;
+
+        if (!tab || typeof(tab.url) !== "string") {
+            return undefined;
+        }
+
+        const url = new URL(tab.url);
+
+        return `${url.protocol}//${url.host}${url.pathname}`;
     }
 
     protected async getTabId(): Promise<number | undefined> {
