@@ -24,8 +24,10 @@
         "@riotjs/webpack-loader": "^6.0.0",
         "@tsconfig/node12": "^1.0.1",
         "@types/node": "^20.3.3",
+        "@types/scryptsy": "^2.0.3",
         "@typescript-eslint/eslint-plugin": "^7.1.0",
         "browserify": "^17.0.0",
+        "buffer": "^6.0.3",
         "css-loader": "^6.7.1",
         "eslint": "^8.57.0",
         "mini-css-extract-plugin": "^2.6.0",
@@ -39,6 +41,8 @@
         "webpack-cli": "^5.1.4"
     },
     "dependencies": {
-        "openodin": "=0.8.6"
+        "openodin": "=0.8.6",
+        "scryptsy": "^2.1.0",
+        "tweetnacl": "^1.0.3"
     }
 }
