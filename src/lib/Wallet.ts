@@ -37,8 +37,8 @@ export class Wallet {
             keyPairs: [],
         };
 
-        this.nonce = new Uint8Array(),
-        this.scrypt_salt = ""
+        this.nonce = new Uint8Array();
+        this.scrypt_salt = "";
     }
 
     /**
