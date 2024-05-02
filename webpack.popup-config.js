@@ -1,5 +1,6 @@
 const path = require("path");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const webpack = require("webpack");
 
 module.exports = {
     node: {
@@ -14,6 +15,9 @@ module.exports = {
     plugins: [
         new MiniCssExtractPlugin({
             filename: "popup.css"
+        }),
+        new webpack.ProvidePlugin({
+            Buffer: ['buffer', 'Buffer'],
         }),
     ], 
     module: {
@@ -48,6 +52,9 @@ module.exports = {
     },
     resolve: {
         fallback: {
+            crypto: require.resolve("crypto-browserify"),
+            stream: require.resolve("stream-browserify"),
+            buffer: require.resolve("buffer/")
         }
     }
 };
