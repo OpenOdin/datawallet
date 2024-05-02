@@ -10,9 +10,9 @@ import scrypt from "scryptsy";
 
 export class Wallet {
     protected password: string;
-    private nonce: Uint8Array;
+    private nonce: number[];
 
-    private scrypt_salt: string;
+    private scrypt_salt: number[];
     readonly scrypt_salt_length = 32;   // bytes
     readonly scrypt_N = 16384;          // work factor (iters)
     readonly scrypt_r = 8;              // memory factor
@@ -37,8 +37,8 @@ export class Wallet {
             keyPairs: [],
         };
 
-        this.nonce = new Uint8Array();
-        this.scrypt_salt = "";
+        this.nonce = [];
+        this.scrypt_salt = [];
     }
 
     /**
@@ -74,11 +74,11 @@ export class Wallet {
      * Attempts to decrypt wallet using this.password
      * @throws if wallet cannot be decrypted.
      */
-    protected decrypt(encryptedBlob: Uint8Array): WalletConfig {
+    protected decrypt(encryptedBlob: number[]): WalletConfig {
         // Password-based key derivation for NaCl secret box
         let key: Uint8Array = new Uint8Array();
         if (this.scrypt_salt.length > 0) {
-            key = scrypt(this.password, this.scrypt_salt, this.scrypt_N, this.scrypt_r, this.scrypt_p, nacl.secretbox.keyLength);
+            key = scrypt(this.password, Buffer.from(this.scrypt_salt), this.scrypt_N, this.scrypt_r, this.scrypt_p, nacl.secretbox.keyLength);
         } else {
             console.warn("Decrypting wallet: salt is unset.");
         }
@@ -86,7 +86,8 @@ export class Wallet {
         // Decrypt using key
         let blob = "";
         if (key && key.length > 0) {
-            const blobArray = nacl.secretbox.open(encryptedBlob, this.nonce, key);
+            const blobArray = nacl.secretbox.open(Buffer.from(encryptedBlob),
+                Buffer.from(this.nonce), key);
 
             // Note: original message is expected to be encoded with TextEncoder.
             // Decode the original message.
@@ -108,27 +109,27 @@ export class Wallet {
     }
 
     /**
-     * Encrypt the wallet and return it as Uint8Array
+     * Encrypt the wallet and return it as number[]
      * @returns encrypted array
      */
-    protected encrypt(config: WalletConfig): Uint8Array {
+    protected encrypt(config: WalletConfig): number[] {
         const blob = JSON.stringify(config);
 
         // Make sure salt is regenerated and stored for later
-        const decoder = new TextDecoder();
-        this.scrypt_salt = decoder.decode(nacl.randomBytes(this.scrypt_salt_length));
+        this.scrypt_salt = Array.from(nacl.randomBytes(this.scrypt_salt_length));
 
         // Key derivation of password
-        const key = scrypt(this.password, this.scrypt_salt, this.scrypt_N, this.scrypt_r, this.scrypt_p, nacl.secretbox.keyLength);
+        const key = scrypt(this.password, Buffer.from(this.scrypt_salt), this.scrypt_N, this.scrypt_r, this.scrypt_p, nacl.secretbox.keyLength);
 
         // Make sure nonce is regenerated and stored for later
-        this.nonce = nacl.randomBytes(nacl.secretbox.nonceLength);
+        this.nonce = Array.from(nacl.randomBytes(nacl.secretbox.nonceLength));
 
         // Encrypt blob
         const encoder = new TextEncoder();
         const encodedBlob = encoder.encode(blob);
-        const encryptedBlobArray = nacl.secretbox(encodedBlob, this.nonce, key);
-        return encryptedBlobArray;
+        const encryptedBlobArray = nacl.secretbox(encodedBlob, Buffer.from(this.nonce), key);
+
+        return Array.from(encryptedBlobArray);
     }
 
     public getTitle(): string {

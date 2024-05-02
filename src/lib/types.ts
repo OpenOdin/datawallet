@@ -30,9 +30,9 @@ export type TabsState = {
 export type Vault = {
     id: string,
     title: string,
-    blob: Uint8Array,
-    nonce: Uint8Array;
-    scrypt_salt: string;
+    blob: number[],
+    nonce: number[];
+    scrypt_salt: number[];
 };
 
 export type Vaults = {[id: string]: Vault};
