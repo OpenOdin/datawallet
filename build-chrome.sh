@@ -12,13 +12,6 @@
 
 set -e
 
-BROWSERIFY="npx browserify --s module \
-    -i ./node_modules/openodin/build/src/datastreamer/FileStreamWriter.js \
-    -i ./node_modules/openodin/build/src/datastreamer/FileStreamReader.js \
-    -i sqlite3 \
-    -i postgresql-client \
-    -i web-worker"
-
 rm -rf ./dist/* ./build
 
 npx tsc
