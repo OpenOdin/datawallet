@@ -14,11 +14,11 @@ rm -rf ./dist/* ./build
 
 npx tsc
 
-$BROWSERIFY ./node_modules/openodin/build/src/util/RPC.js -o ./build/lib/RPC.js
+npx webpack -c webpack.RPC-config.js
 
-$BROWSERIFY ./build/extension/background-script.js -o ./dist/background-script.js
+npx webpack -c webpack.background-script-config.firefox.js
 
-$BROWSERIFY ./build/extension/content-script.js -o ./dist/content-script.js
+npx webpack -c webpack.content-script-config.js
 
 npx webpack -c ./webpack.popup-config.js && cp ./src/extension/popup/popup.html ./dist
 
