@@ -6,9 +6,8 @@
 # background-script run in a service worker the code must be single threaded, as web workers are
 # not supported in service workers.
 #
-# This means that browserify in this script ignores the "web-worker" package and also we skip to
-# copy the file signatureOffloader-worker-browser.js to the dist directory since it will never be
-# loaded.
+# This means that this script ignores the "web-worker" package and also we skip to copy the file
+# signatureOffloader-worker-browser.js to the dist directory since it will never be loaded.
 
 set -e
 
