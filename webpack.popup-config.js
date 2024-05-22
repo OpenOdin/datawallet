@@ -19,6 +19,9 @@ module.exports = {
         new webpack.ProvidePlugin({
             Buffer: ['buffer', 'Buffer'],
         }),
+        new webpack.ProvidePlugin({
+            process: "process/browser.js",
+        })
     ], 
     module: {
         rules: [
@@ -54,6 +57,7 @@ module.exports = {
         fallback: {
             crypto: require.resolve("crypto-browserify"),
             stream: require.resolve("stream-browserify"),
+            vm:     require.resolve("vm-browserify"),
             buffer: require.resolve("buffer/")
         }
     }
