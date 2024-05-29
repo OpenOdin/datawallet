@@ -1,141 +1,172 @@
 <popup-connection>
-    <div id="tabsContent" class="block text-rubriker">
-        <div if={state.tabState.activated}>
-            <div if={!state.tabState.authed && state.tabState.authRequestId === undefined}>
-                <span class="font-extrabold">{state.tabState.title}</span> tab is not authorized. <br />
-                Send authorization request from browser application to activate the DataWallet.
-            </div>
-            <div if={state.tabState.authed}>
-                <span class="font-extrabold">{state.tabState.title}</span> tab is authorized.
-            </div>
-            <div if={state.tabState.authRequestId !== undefined}>
-                <span class="font-extrabold">{state.tabState.title}</span> tab is requesting authorization. <br />
-                Choose identity to authorize with:
-                <select id="authVault" class="bg-bakgrund-2">
-                    <option each={vault in state.vaults} value={vault.id}>
-                        {vault.title} ({vault.id})
-                    </option>
-                </select>
-
-                <button onclick={ acceptAuth }>Accept auth</button>
-
-                <hr />
-                <button onclick={ denyAuth }>Deny auth</button>
+    <div class="relative z-1 w-full">
+        <div if={state.isLoading}>
+            <div class="justify-center flex items-center absolute w-full xh-full bg-white opacity-70">
+                <h1 class="mb-36 font-black text-5xl shadow">L O A D I N G</h1>
             </div>
         </div>
-        <div if={state.tabState.error}>
-            <p> <span class="font-extrabold">{state.tabState.error}</span></p>
-        </div>
-        <div if={!state.tabState.activated}>
-            <p> <span class="font-extrabold">{state.tabState.title}</span> tab cannot be used with the DataWallet </p>
+
+        <div class="flex flex-col justify-between">
+            <div if={props.tabState.authRequestId}>
+                <div
+                    class="p-4 border rounded border-gray-800 shadow bg-gray-200 text-center font-bold">
+                    The site is requesting you to authenticate. You can choose one wallet below to authenticate.</div>
+                <ul>
+                    <li each={vault in props.vaults}>
+                        <div class="flex flex-rows justify-between border rounded shadow mt-2">
+                            <span class="font-bold text-xl">{vault.title}</span>
+                            <div>
+                                <button
+                                    class="px-4 shadow cursor-pointer border border-green-800 rounded bg-green-600 hover:bg-green-800"
+                                    onclick={() => acceptAuth(vault.id)}>
+                                    <span><img src="gfx/key.svg" class="block-inline"> Authenticate</span>
+                                </button>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <button if={props.tabState.authRequestId}
+                onclick={denyAuth}
+                class="px-8 py-3 mt-6 border border-red-800 font-bold text-xl shadow cursor-pointer rounded hover:bg-red-800 bg-red-600">
+                Reject authentication
+            </button>
+
+            <div if={props.tabState.authed}
+                class="p-4 border rounded border-gray-800 shadow bg-gray-200 text-center font-bold">
+
+                <div>This site is authenticated</div>
+
+                <button
+                    onclick={logout}
+                    class="px-8 py-3 mt-6 border border-red-800 font-bold text-xl shadow cursor-pointer rounded hover:bg-red-800 bg-red-600">
+                    Logout
+                </button>
+            </div>
+
+            <div if={props.tabState.error}
+                class="p-4 border rounded border-red-800 shadow bg-gray-200 text-center font-bold">
+                {props.tabState.error}
+            </div>
         </div>
     </div>
 
     <script>
         import {Wallet} from "../../../build/lib/Wallet.js";
         import PopupDialogUnlockVault from "./popup-dialog-unlock-vault.riot";
+        import PopupDialogError from "./popup-dialog-error.riot";
+        import PopupDialogConfirm from "./popup-dialog-confirm.riot";
         import * as riot from "riot";
 
         /**
-         * @param props {rpc, tabId}
+         * @param props {rpc, tabId, tabState}
          */
         export default {
-            onBeforeMount(props, state) {
-                this.state = {
-                    tabState: {},
-                    vaults: [],
-                };
-
-                this.updateState();
-
-                this.getVaults();
-
-                props.rpc.onCall("beginAuth", () => this.updateState() );
+            async onBeforeMount(props, state) {
+                this.state.passwords = await this.props.rpc.call("getVolatile", ["passwords"]) ?? {};
             },
-            getVaults() {
-                const tabsState = this.props.rpc.call("getVaults").then( vaults => {
-                    this.update({
-                        vaults: Object.values(vaults),
-                    });
-                });
-            },
-            updateState() {
-                const tabsState = this.props.rpc.call("getState", [this.props.tabId]).then( tabsState => {
-                    const tabState = tabsState[this.props.tabId] ?? {};
 
-                    this.update({
-                        tabState,
-                    });
-                });
-            },
-            async acceptAuth(e) {
-                e.preventDefault();
-
-                const dd = document.getElementById("authVault");
-                const id = dd.value;
-
-                const vault = this.state.vaults.find( vault => vault.id === id);
+            async acceptAuth(id) {
+                const vault = this.props.vaults.find( vault => vault.id === id);
 
                 if (!vault) {
                     return;
                 }
 
-                const unlockModal = riot.component(PopupDialogUnlockVault)(this.root.appendChild(document.createElement("DIV")), {});
+                if (!this.state.passwords[id]) {
+                    const unlockModal = riot.component(PopupDialogUnlockVault)(this.root.appendChild(document.createElement("DIV")), {});
 
-                const unlockRet = await unlockModal.showModal();
+                    const unlockRet = await unlockModal.showModal();
 
-                if (!unlockRet) {
-                    return;
+                    if (!unlockRet || !unlockRet.password) {
+                        return;
+                    }
+
+                    this.state.passwords[id] = unlockRet.password;
                 }
 
-                const wallet = new Wallet(unlockRet.password);
+                this.update({isLoading: true});
+
+                // Sleep to allow the GUI to update
+                //
+                await this.sleep(1);
+
+                let wallet;
 
                 try {
+                    wallet = new Wallet(this.state.passwords[id]);
+
                     wallet.load(vault);
                 }
                 catch(e) {
-                    console.error("Could not open wallet");
-                    this.update({error: "Could not open wallet"});
+                    delete this.state.passwords[id];
+                    console.error("Could not open wallet", e);
+                    this.showError("Could not open wallet", "Please try again with another password.");
+                    return;
+                }
+                finally {
+                    this.update({isLoading: false});
+                }
+
+                await this.cachePasswords();
+
+                const keyPairs = wallet.getKeyPairs();
+
+                if (keyPairs.length === 0) {
+                    this.showError("Error", "The chosen wallet has no keys and cannot be used to authenticate.");
                     return;
                 }
 
-                await this.props.rpc.call("acceptAuth", [this.props.tabId, wallet.getKeyPairs()]);
+                const keys = keyPairs.map( kp => this.formatHex(kp.publicKey) );
 
-                this.updateState();
+                const confirm = await this.confirm(`Authenticate using wallet ${vault.title} (ID: ${vault.id})?`,
+                        `The following keys will be available for the site to sign with, the first key will be used for handshake: ${keys}`);
+
+                if (!confirm) {
+                    return;
+                }
+
+                await this.props.rpc.call("acceptAuth", [this.props.tabId, keyPairs]);
+
+                this.props.callback();
             },
-            denyAuth(e) {
-                e.preventDefault();
 
+            denyAuth() {
                 this.props.rpc.call("denyAuth", [this.props.tabId]);
 
-                this.updateState();
+                this.props.callback();
+            },
+
+            logout() {
+                this.props.rpc.call("closeAuth", [this.props.tabId]);
+
+                this.props.callback();
+            },
+
+            async cachePasswords() {
+                await this.props.rpc.call("storeVolatile", ["passwords", this.state.passwords]);
+            },
+
+            async sleep(ms) {
+                return new Promise( resolve => {
+                    setTimeout(resolve, ms);
+                });
+            },
+
+            async showError(title, message) {
+                const modal = riot.component(PopupDialogError)(this.root.appendChild(document.createElement("DIV")), {title, message});
+                await modal.showModal();
+            },
+
+            async confirm(title, message) {
+                const modal = riot.component(PopupDialogConfirm)(this.root.appendChild(document.createElement("DIV")), {title, message});
+                return await modal.showModal();
+            },
+
+            formatHex(integers) {
+                return integers.map( i => i.toString(16).padStart(2, "0") ).join("");
             },
         }
     </script>
-    <style>
-        /*#tabsContent {
-            display: block;
-        }*/
-        .tabList {
-            width: 100%;
-            height: 30px;
-            display: block;
-            background-color: #efefef;
-        }
-        .tabList div {
-            float: left;
-            display: block;
-            border: 1px solid black;
-        }
-        .tabList .active {
-            background-color: 33efef;
-        }
-        button {
-            display: block;
-            border: solid 1px black;
-        }
-        .non-visible {
-            visibility: hidden;
-        }
-    </style>
 </popup-connection>

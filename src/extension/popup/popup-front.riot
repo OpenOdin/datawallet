@@ -1,0 +1,110 @@
+<popup-front>
+    <div class="relative z-1 xh-full w-full">
+        <div if={state.isLoading}>
+            <div class="justify-center flex items-center absolute w-full xh-full bg-white opacity-70">
+                <h1 class="mb-36 font-black text-5xl shadow">L O A D I N G</h1>
+            </div>
+        </div>
+    </div>
+    <div class="flex flex-col">
+        <div if={state.vaults.length === 0}>
+            <h1>Hi! Looks like you are new here :)</h1>
+            Click the <img src="gfx/wallet2.svg" class="w-5 h-5 inline-block" > icon above to create or import a data wallet.
+
+            <hr />
+            The data wallet is how you login to applications and control your data.
+
+            <hr />
+            A data wallet is a secure and encrypted storage for your secret cryptographic keys. <br />
+            You can create as many wallets you want, but you will need at least one. <br />
+            Data wallets are free and yours to keep forever. <br />
+        </div>
+
+        <div if={state.vaults.length > 0}>
+            <select class="block font-bold w-full my-6 border bg-gray-200 shadow p-2"
+                onchange={change}>
+                <option>Sites</option>
+                <option each={tabState in Object.values(state.tabsState)}
+                    if={tabState.authed || tabState.authRequestId}
+                    selected={tabState.tabId === state.selectedTabId}
+                    value={tabState.tabId}>
+                    {tabState.url}
+                </option>
+            </select>
+        </div>
+
+        <popup-connection if={state.tabState}
+            key={state.selectedTabId}
+            rpc={props.rpc}
+            tab-state={state.tabState}
+            callback={this.callback}
+            vaults={state.vaults}
+            tab-id={state.selectedTabId}>
+        </popup-connection>
+    </div>
+
+    <script>
+        import * as riot from "riot";
+
+        /**
+         * @param props {rpc, tabId}
+         */
+        export default {
+            onBeforeMount(props, state) {
+                this.state = {
+                    isLoading: true,
+                    vaults: [],
+                    tabsState: {},
+                    selectedTabId: props.tabId,
+                };
+
+                props.rpc.onCall("beginAuth", () => this.updateState() );
+
+                this.updateState();
+            },
+
+            callback() {
+                this.updateState();
+            },
+
+            onBeforeUpdate(props, state) {
+                const tabState = state.tabsState[state.selectedTabId];
+
+                if (tabState) {
+                    if (tabState.authed || tabState.authRequestId) {
+                        state.tabState = tabState;
+                    }
+                    else {
+                        state.tabState = undefined;
+                    }
+                }
+                else {
+                    state.tabState = undefined;
+                }
+            },
+
+            change(e) {
+                const selectedTabId = e.srcElement.value;
+
+                this.update({selectedTabId});
+            },
+
+            async updateState() {
+                this.state.passwords = await this.props.rpc.call("getVolatile", ["passwords"]) ?? {};
+
+                this.props.rpc.call("getVaults").then( vaults => {
+                    this.update({isLoading: false, vaults: Object.values(vaults)});
+                });
+
+                this.props.rpc.call("getState").then( tabsState => {
+                    const tabState = tabsState[this.state.selectedTabId];
+
+                    this.update({
+                        tabState,
+                        tabsState,
+                    });
+                });
+            },
+        }
+    </script>
+</popup-front>

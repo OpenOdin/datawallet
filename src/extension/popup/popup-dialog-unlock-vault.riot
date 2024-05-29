@@ -1,39 +1,87 @@
 <popup-dialog-unlock-vault>
     <dialog>
-        <p>Unlock wallet<p>
-      <form method="dialog">
-        <p>
-          <label for="password">Wallet password:</label>
-          <input id="password" type="password"/>
-        </p>
-        <div>
-          <button value="cancel" id="cancel" type="cancel">Cancel</button>
-          <button value="unlock" type="submit">Unlock</button>
+        <div class="flex flex-col justify-center p-3 w-full h-4/5 bg-gray-100 rounded shadow border-4 border-teal-500">
+            <div class="text-center">
+                <h1 class="font-bold text-lg">Unlock Wallet</h1>
+            </div>
+
+            <div class="p-4 border rounded border-gray-800 bg-gray-200">
+                The wallet is encrypted and you need to provide your password to decrypt it.</div>
+
+            <div class="flex justify-center mt-3">
+                <div class="w-72">
+                    <div class="pb-px font-bold">
+                        Password
+                    </div>
+                    <div>
+                        <input id="password" type="password" maxlength="30"
+                            onkeyup={changed}
+                            placeholder="Password (minimum {minlen} char) "
+                            class="border border-gray-400 rounded-sm shadow w-full" />
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-center">
+                <div class="w-72 mt-6 flex flex-row justify-between">
+                    <button
+                        class="px-4 border shadow cursor-pointer rounded bg-gray-300 hover:bg-gray-400 disabled:bg-gray-100"
+                        disabled={state.password.length < minlen}
+                        onclick={unlock}>Unlock</button>
+
+                    <button
+                        class="px-4 border shadow cursor-pointer rounded bg-gray-300 hover:bg-gray-400"
+                        onclick={cancel}>Cancel</button>
+                </div>
+            </div>
         </div>
-      </form>
     </dialog>
 
     <script>
         let thisRef;
         let dialog;
 
+        import {PASSWORD_MIN_LENGTH} from "../../../build/lib/types.js";
+
         export default {
+            onBeforeMount(props, state) {
+                this.minlen = PASSWORD_MIN_LENGTH;
+                state.password = "";
+            },
+
+            changed(e) {
+                this.update({password: e.target.value});
+
+                if (e.keyCode === 13) {
+                    this.unlock();
+                }
+            },
+
+            unlock() {
+                if (this.state.password.length < this.minlen) {
+                    return;
+                }
+
+                thisRef.unmount();
+
+                thisRef.state.resolve({
+                    password: this.state.password,
+                });
+            },
+
+            cancel() {
+                thisRef.unmount();
+                thisRef.state.resolve();
+            },
+
             onMounted(props, state) {
                 thisRef = this;
                 dialog = thisRef.$("dialog");
-                dialog.addEventListener("close", function() {
-                    if (dialog.returnValue === "unlock") {
-                        thisRef.state.resolve({
-                            password: dialog.querySelector("#password").value,
-                        });
-                    }
-                    else {
-                        thisRef.state.resolve();
-                    }
 
-                    thisRef.unmount();
+                dialog.addEventListener("close", function() {
+                    thisRef.cancel();
                 });
             },
+
             async showModal() {
                 dialog.showModal();
 
@@ -46,10 +94,4 @@
             },
         }
     </script>
-    <style>
-        button {
-            display: block;
-            border: solid 1px black;
-        }
-    </style>
 </popup-dialog-unlock-vault>

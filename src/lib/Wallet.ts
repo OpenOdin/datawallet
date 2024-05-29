@@ -9,6 +9,10 @@ import nacl from "tweetnacl";
 import scrypt from "scryptsy";
 
 export class Wallet {
+    /**
+     * Password is temporarily kept in this instance to be able to
+     * encrypt and decrypt.
+     */
     protected password: string;
     private nonce: number[];
 

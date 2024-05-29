@@ -1,0 +1,52 @@
+<popup-dialog-error>
+    <dialog>
+        <div class="flex flex-col justify-center p-3 w-full h-4/5 bg-red-100 rounded shadow border-4 border-red-800">
+            <div class="text-center m-4">
+                <h1 class="font-bold text-lg">{props.title}</h1>
+            </div>
+
+            <div class="p-4 border rounded border-gray-800 bg-gray-200">
+                {props.message}
+            </div>
+
+            <div
+                class="flex justify-center mt-6">
+                <button
+                    class="px-8 py-4 font-bold border shadow cursor-pointer rounded bg-gray-300 hover:bg-gray-400"
+                    onclick={ok}>OK</button>
+            </div>
+        </div>
+    </dialog>
+
+    <script>
+        let thisRef;
+        let dialog;
+
+        export default {
+            ok() {
+                thisRef.unmount();
+                thisRef.state.resolve();
+            },
+
+            onMounted(props, state) {
+                thisRef = this;
+                dialog = thisRef.$("dialog");
+
+                dialog.addEventListener("close", function() {
+                    thisRef.ok();
+                });
+            },
+
+            async showModal() {
+                dialog.showModal();
+
+                return new Promise( function(resolve, reject) {
+                    thisRef.update({
+                        resolve,
+                        reject
+                    });
+                });
+            },
+        }
+    </script>
+</popup-dialog-error>
