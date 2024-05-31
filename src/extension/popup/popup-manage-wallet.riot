@@ -1,0 +1,268 @@
+<popup-manage-wallet>
+    <div class="relative z-1 xh-full w-full">
+        <div if={state.isSaving}>
+            <div class="justify-center flex items-center absolute w-full xh-full bg-white opacity-70">
+                <h1 class="mb-36 font-black text-5xl shadow">S A V I N G</h1>
+            </div>
+        </div>
+
+        <div class="xh-full flex flow-row justify-between">
+            <div class="mt-1 w-full px-4 border rounded-t-lg border-gray-400">
+                <div class="border-b border-gray-400 text-center">
+                    <h5 class="inline-block gradient-oo font-bold text-xl">Manage Wallet {state.title}</h5>
+                    <h6>ID: {state.id}</h6>
+                </div>
+
+                <div class="flex flex-col mt-1">
+                    <div if={state.error}>
+                        <h4 class="text-red-600 text-center">
+                            {state.error}</h4>
+                    </div>
+
+                    <div>
+                        <div class="pb-px font-bold">
+                            Wallet Title
+                        </div>
+                        <div>
+                            <input id="wallettitle" type="text" maxlength="30"
+                                value={state.title}
+                                onkeyup={titleChanged}
+                                placeholder="Give your wallet a descriptive title"
+                                class="border border-gray-400 rounded-sm shadow w-72" />
+                        </div>
+                    </div>
+
+                    <div if={state.keyPairs.length === 0}
+                        class="mt-10 p-4 text-center text-gray-800 text-xl border border rounded-lg border-gray-400 shadow shadow-red-800">
+                        You have no keys. <br />
+                        Create at least one key pair to be able to login to <span class="gradient-oo">OpenOdin</span> enabled web sites.<br />
+                    </div>
+
+                    <div if={state.keyPairs.length > 0} class="mt-4">
+                        <div>Public Keys listed below. Key #1 is the key used for handshake.</div>
+                        <ul>
+                            <li each={(keyPair, index) in state.keyPairs}>
+                                <div class="flex flex-rows justify-between mt-2">
+                                    <div class="w-5 h-5">
+                                        <minidenticon-svg
+                                            username={formatHex(keyPair.publicKey)}
+                                            saturation="60" lightness="50">
+                                        </minidenticon-svg>
+                                    </div>
+
+                                    <div class="border rounded font-mono text-xs">#{index + 1} {formatHex(keyPair.publicKey)}</div>
+
+                                    <div class="flex flex-row">
+                                        <button class="w-5 h-5 text-center cursor-pointer border rounded bg-gray-300 hover:bg-gray-400 disabled:bg-gray-100"
+                                            onclick={() => up(index)}
+                                            disabled={index===0}>
+                                            <img src="gfx/arrow-up-short.svg">
+                                        </button>
+
+                                        <button class="w-5 h-5 text-center cursor-pointer border rounded bg-gray-300 hover:bg-gray-400 disabled:bg-gray-100"
+                                            onclick={() => down(index)}
+                                            disabled={index===state.keyPairs.length - 1}>
+                                            <img src="gfx/arrow-down-short.svg">
+                                        </button>
+
+                                        <button class="px-1 text-center cursor-pointer border-0 rounded hover:bg-red-400"
+                                            title="Delete key pair"
+                                            onclick={() => deleteKeyPair(index)}>
+                                            <img src="gfx/x-circle.svg">
+                                        </button>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="flex flex-row mt-4 justify-between">
+                        <button class="border rounded bg-gray-300 hover:bg-gray-400 px-3"
+                            onclick={generateKeyPair}>New</button>
+
+                        <button class="border rounded bg-gray-300 hover:bg-gray-400 px-3"
+                            onclick={importDialog}>Import</button>
+                    </div>
+
+                    <div class="mt-6 flex flex-row justify-between">
+                        <div>
+                            <button
+                                class="px-8 py-3 tracking-wide border border-gray-400 font-bold text-xl shadow cursor-pointer rounded text-gray-300 hover:text-gray-600 btn-gradient-oo"
+                                onclick={ save }>
+                                Save</button>
+                        </div>
+
+                        <div>
+                            <button
+                                onclick={cancel}
+                                class="px-8 py-3 tracking-wide border border-gray-400 text-xl shadow cursor-pointer rounded text-gray-800 hover:bg-gray-400 bg-gray-300">
+                                Discard changes</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        import * as riot from "riot";
+
+        import PopupDialogImportKey from "./popup-dialog-import-key.riot";
+        import PopupDialogConfirm from "./popup-dialog-confirm.riot";
+
+        export default {
+            onBeforeMount(props, state) {
+                this.state = {
+                    keyPairs: this.props.wallet.getKeyPairs(),
+                    title: this.props.wallet.getTitle(),
+                    id: this.props.wallet.getId(),
+                };
+            },
+
+            formatHex(integers) {
+                return integers.map( i => i.toString(16).padStart(2, "0") ).join("");
+            },
+
+            async generateKeyPair() {
+                const keyPair = await this.props.rpc.call("newKeyPair");
+
+                this.update({
+                    keyPairs: [...this.state.keyPairs, keyPair],
+                });
+            },
+
+            async deleteKeyPair(index) {
+                const keyPair = this.state.keyPairs[index];
+
+                const confirm = await this.confirm(`Delete key pair`, "You will lose this key pair 4-ever if you press OK");
+
+                if (!confirm) {
+                    return;
+                }
+
+                const keyPairs = this.state.keyPairs.slice();
+                keyPairs.splice(index, 1);
+
+                this.update({
+                    keyPairs,
+                });
+            },
+
+            up(index) {
+                const keyPairs = this.state.keyPairs.slice();
+                const keyPair = keyPairs.splice(index, 1)[0];
+                keyPairs.splice(index-1, 0, keyPair);
+
+                this.update({
+                    keyPairs,
+                });
+            },
+
+            down(index) {
+                const keyPairs = this.state.keyPairs.slice();
+                const keyPair = keyPairs.splice(index, 1)[0];
+                keyPairs.splice(index+1, 0, keyPair);
+
+                this.update({
+                    keyPairs,
+                });
+            },
+
+            async importDialog() {
+                const modal = riot.component(PopupDialogImportKey)(this.root.appendChild(document.createElement("DIV")), {});
+
+                const ret = await modal.showModal();
+
+                if (ret) {
+                    try {
+                        const secretKey = ret.secretKey.match(/../g).map(s => parseInt(s, 16));
+
+                        const publicKey = secretKey.slice(32);
+
+                        // TODO: try out key pair to see it is valid.
+
+                        const keyPair = {publicKey, secretKey, crypto: "ed25519"};
+
+                        this.update({
+                            keyPairs: [...this.state.keyPairs, keyPair],
+                        });
+                    }
+                    catch(e) {
+                        this.update({error: "Could not import key"});
+                        console.error(`Could not import key: ${e}`);
+                        return;
+                    }
+                }
+            },
+
+            titleChanged(e) {
+                this.update({title: e.target.value});
+            },
+
+            cancel() {
+                this.props.callback();
+            },
+
+            async save(e) {
+                const title = this.state.title;
+
+                if (!title) {
+                    this.update({error: "Title must be set"});
+                    return;
+                }
+
+                this.update({isSaving: true});
+
+                await this.sleep(1);
+
+                const wallet = this.props.wallet;
+
+                wallet.setKeyPairs(this.state.keyPairs);
+                wallet.setTitle(title);
+
+                try {
+                    const vault = wallet.export();
+
+                    const result = await this.props.rpc.call("saveVault", [vault]);
+
+                    const newPassword = undefined;
+
+                    this.props.callback(false, newPassword);
+
+                }
+                catch(e) {
+                    this.props.callback("Wallet could not be encrypted or stored");
+                }
+
+                this.update({isSaving: false});
+                this.unmount();
+            },
+
+            async confirm(title, message) {
+                const modal = riot.component(PopupDialogConfirm)(this.root.appendChild(document.createElement("DIV")), {title, message});
+                return await modal.showModal();
+            },
+
+            async sleep(ms) {
+                return new Promise( resolve => {
+                    setTimeout(resolve, ms);
+                });
+            },
+
+        }
+    </script>
+    <style>
+        .keyPair {
+            display: block;
+            background-color: gray;
+        }
+        .handshakeKey {
+            background-color: green;
+        }
+        button {
+            display: block;
+            border: solid 1px black;
+        }
+    </style>
+</popup-manage-wallet>

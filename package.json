@@ -46,7 +46,8 @@
         "webpack-cli": "^5.1.4"
     },
     "dependencies": {
-        "openodin": "=0.8.7",
+        "minidenticons": "^4.2.0",
+        "openodin": "=0.8.8",
         "scryptsy": "^2.1.0",
         "tweetnacl": "^1.0.3"
     }

@@ -1,19 +1,39 @@
 <popup-dialog-import-key>
     <dialog>
-        Import key
-      <form method="dialog">
-        <p>
-          <label for="publicKey">Public Key:</label>
-          <input id="publicKey" />
+        <div class="flex flex-col justify-center p-3 w-full h-4/5 bg-gray-100 rounded shadow border-4 border-teal-500">
+            <div class="text-center">
+                <h1 class="font-bold text-lg">Import key</h1>
+            </div>
 
-          <label for="secretKey">Secret Key</label>
-          <input id="secretKey" />
-        </p>
-        <div>
-          <button value="cancel" id="cancel" type="cancel">Cancel</button>
-          <button value="import" type="submit">Import</button>
+            <div class="p-4 border rounded border-gray-800 bg-gray-200">
+                Paste your secret key below to import it. Note that you should clear the clipboard after pasting in the key.</div>
+
+            <div class="flex justify-center mt-3">
+                <div class="w-72">
+                    <div class="pb-px font-bold">
+                        Secret Key in hexadecimal format
+                    </div>
+                    <div>
+                        <input id="secretkey" type="password" maxlength="128"
+                            onkeyup={changed}
+                            placeholder="Secret Key "
+                            class="border border-gray-400 rounded-sm shadow w-full" />
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-center">
+                <div class="w-72 mt-6 flex flex-row justify-between">
+                    <button
+                        class="px-4 border shadow cursor-pointer rounded bg-gray-300 hover:bg-gray-400 disabled:bg-gray-100"
+                        disabled={state.secretKey.length < 128}
+                        onclick={importKey}>Import</button>
+
+                    <button
+                        class="px-4 border shadow cursor-pointer rounded bg-gray-300 hover:bg-gray-400"
+                        onclick={cancel}>Cancel</button>
+                </div>
+            </div>
         </div>
-      </form>
     </dialog>
 
     <script>
@@ -21,23 +41,19 @@
         let dialog;
 
         export default {
+            onBeforeMount(props, state) {
+                state.secretKey = "";
+            },
+
             onMounted(props, state) {
                 thisRef = this;
                 dialog = thisRef.$("dialog");
-                dialog.addEventListener("close", function() {
-                    if (dialog.returnValue === "import") {
-                        thisRef.state.resolve({
-                            publicKey: dialog.querySelector("#publicKey").value,
-                            secretKey: dialog.querySelector("#secretKey").value,
-                        });
-                    }
-                    else {
-                        thisRef.state.resolve();
-                    }
 
-                    thisRef.unmount();
+                dialog.addEventListener("close", function() {
+                    thisRef.cancel();
                 });
             },
+
             async showModal() {
                 dialog.showModal();
 
@@ -48,12 +64,31 @@
                     });
                 });
             },
+
+            changed(e) {
+                this.update({secretKey: e.target.value});
+
+                if (e.keyCode === 13) {
+                    this.importKey();
+                }
+            },
+
+            importKey() {
+                if (this.state.secretKey.length < this.minlen) {
+                    return;
+                }
+
+                thisRef.unmount();
+
+                thisRef.state.resolve({
+                    secretKey: this.state.secretKey,
+                });
+            },
+
+            cancel() {
+                thisRef.unmount();
+                thisRef.state.resolve();
+            },
         }
     </script>
-    <style>
-        button {
-            display: block;
-            border: solid 1px black;
-        }
-    </style>
 </popup-dialog-import-key>

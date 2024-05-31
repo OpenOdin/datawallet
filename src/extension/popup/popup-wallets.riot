@@ -1,172 +1,371 @@
 <popup-wallets>
-    <div id="#wallets" class="block overflow-y-scroll text-rubriker">
-        <div each={vault in state.vaults}>
-            Wallet: {vault.title} (ID: {vault.id}) <br />
-
-            <button
-                id="manageWallet_{vault.id}"
-                onclick={ manageWallet }>
-                Manage Wallet
-            </button>
+    <div class="relative z-1 xh-full w-full">
+        <div if={state.isLoading}>
+            <div class="justify-center flex items-center absolute w-full xh-full bg-white opacity-70">
+                <h1 class="mb-36 font-black text-5xl shadow">L O A D I N G</h1>
+            </div>
         </div>
+        <div if={state.severeError}>
+            <div class="justify-center flex items-center absolute w-full xh-full bg-white opacity-70">
+                <div class="flex flex-col justify-center p-3 w-full h-4/5 bg-red-100 rounded shadow border-4 border-red-800">
+                    <div class="text-center m-4">
+                        <h1 class="font-bold text-5xl">{state.severeError}</h1>
+                    </div>
 
-        <button
-            onclick={ newVault }>
-            Create New Data Wallet
-        </button>
+                    <div class="p-4 border rounded border-gray-800 bg-gray-200 text-center font-bold">
+                        This is a severe error and a reload is required
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="xh-full flex flow-row justify-between">
+            <div
+                class="mt-3 w-full px-4 border rounded-t-lg border-gray-400 {state.display !== "wallets" ? "hidden" : ""}">
+                <div class="border-b border-gray-400 text-center">
+                    <h5 class="inline-block gradient-oo font-bold text-xl">Wallets</h5>
+                </div>
+
+                <div if={state.vaults.length === 0}
+                    class="mt-10 p-4 text-center text-gray-800 text-xl border border rounded-lg border-gray-400 shadow shadow-red-800">
+                    You have no wallets. <br />
+                    Create at least one wallet to be able to login to <span class="gradient-oo">OpenOdin</span> enabled web sites.<br />
+                </div>
+
+                <ul>
+                    <li each={vault in state.vaults}>
+                        <div class="flex flex-rows justify-between border rounded shadow mt-2">
+                            <span class="font-bold text-xl">{vault.title}</span>
+                            <div>
+                                <img if={!state.passwords[vault.id]}
+                                    title="Wallet is locked"
+                                    class="inline-block"
+                                    src="gfx/lock.svg">
+
+                                <button if={state.passwords[vault.id]}
+                                    onclick={() => lockWallet(vault.id)}
+                                    class="w-5 h-5 border-0 rounded cursor-pointer hover:bg-gray-300"
+                                    title="Wallet is unlocked, click to lock it">
+                                    <img src="gfx/unlock.svg">
+                                </button>
+
+                                <button
+                                    class="w-5 h-5 cursor-pointer border-0 rounded hover:bg-gray-300"
+                                    onclick={() => manageWallet(vault.id)}>
+                                    <img src="gfx/sliders2.svg">
+                                </button>
+
+                                <button
+                                    class="px-1 w-5 h-5 cursor-pointer border-0 rounded hover:bg-red-400"
+                                    onclick={() => deleteWallet(vault.id)}>
+                                    <img src="gfx/x-circle.svg">
+                                </button>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+
+                <div class="mt-6 flex flex-row justify-between">
+                    <button
+                        class="px-8 py-3 tracking-wide border border-gray-400 font-bold text-xl shadow cursor-pointer rounded text-gray-300 hover:text-gray-600 btn-gradient-oo"
+                        onclick={ () => update({display: "create"}) }>
+                        New Wallet
+                    </button>
+                </div>
+            </div>
+
+            <div if={state.display === "create"}
+                class="mt-3 w-full px-4 border rounded-t-lg border-gray-400">
+                <div class="border-b border-gray-400 text-center">
+                    <h5 class="inline-block gradient-oo font-bold text-xl">Create Wallet</h5>
+                </div>
+
+                <div class="flex flex-row space-x-4">
+                    <div class="flex flex-col mt-8">
+                        <div if={state.error}>
+                            <h4 class="text-red-600 text-center">
+                                {state.error}</h4>
+                        </div>
+
+                        <div class="flex justify-center">
+                            <div class="w-72">
+                                <div class="pb-px font-bold">
+                                    Wallet Name
+                                </div>
+                                <div>
+                                    <input id="wallettitle" type="text" maxlength="30"
+                                        placeholder="Give your wallet a descriptive title"
+                                        class="border border-gray-400 rounded-sm shadow w-full" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-center">
+                            <div class="w-72">
+                                <div class="pb-px font-bold">
+                                    Password
+                                </div>
+                                <div>
+                                    <input id="walletpassword" type="password" maxlength="30"
+                                        placeholder="Set a secure at least {this.minlen} letters long password"
+                                        class="border border-gray-400 rounded-sm shadow w-full" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-center">
+                            <div class="w-72 mt-6 flex flex-row justify-between">
+                                <button
+                                    class="px-8 py-3 tracking-wide border border-gray-400 font-bold text-xl shadow cursor-pointer rounded text-gray-300 hover:text-gray-600 btn-gradient-oo"
+                                    onclick={ createVault }>
+                                    Create</button>
+
+                                <button
+                                    onclick={cancel}
+                                    class="px-8 py-3 tracking-wide border border-gray-400 font-bold text-xl shadow cursor-pointer rounded text-gray-300 hover:text-gray-600 btn-gradient-oo">
+                                    Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="mt-10 p-2 text-center text-gray-800 text-xl border border-rounded-lg border-gray-400 shadow">
+                        A wallet only exists in this browser. <br />
+                        A wallet should always be backed up. <br />
+                        A backed up wallet can be imported into another browser or another computer. <br />
+                        You are the sole owner of this wallet, this means: <br />
+                        <ul>
+                            <li>Only you with your password can access your wallet</li>
+                            <li>If you lose your wallet it is lost forever</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <popup-manage-wallet if={state.display === "manage"}
+                class="w-full"
+                rpc={props.rpc}
+                callback={state.manageCallback}
+                wallet={state.wallet}>
+            </popup-manage-wallet>
+        </div>
     </div>
 
     <script>
         import {Wallet} from "../../../build/lib/Wallet.js";
+        import {PASSWORD_MIN_LENGTH} from "../../../build/lib/types.js";
+
         import * as riot from "riot";
 
         import PopupDialogUnlockVault from "./popup-dialog-unlock-vault.riot";
-        import PopupDialogNewWallet from "./popup-dialog-new-wallet.riot";
-        import PopupDialogManageWallet from "./popup-dialog-manage-wallet.riot";
+        import PopupDialogError from "./popup-dialog-error.riot";
+        import PopupDialogConfirm from "./popup-dialog-confirm.riot";
 
         export default {
-            onBeforeMount(props, state) {
+            async onBeforeMount(props, state) {
                 this.state = {
+                    /* vaults = Array<{title: string, id: string, etc}> */
                     vaults: [],
+                    display: "wallets",
+                    isLoading: true,
+
+                    // Cache passwords to keep wallets unlocked while working with them.
+                    passwords: {},  // {[id: string]: string}
                 };
 
-                this.getVaults();
-            },
-            getVaults() {
-                const tabsState = this.props.rpc.call("getVaults").then( vaults => {
-                    this.update({
-                        vaults: Object.values(vaults),
-                    });
+                this.minlen = PASSWORD_MIN_LENGTH;
+
+                this.getVaults().then( () => {
+                    setTimeout( () => this.update({isLoading: false}), 500);
                 });
             },
-            async manageWallet(e) {
-                e.preventDefault();
 
-                const id = e.target.id.split('_')[1];
+            async getVaults() {
+                this.state.passwords = await this.props.rpc.call("getVolatile", ["passwords"]) ?? {};
+
+                const vaults = await this.props.rpc.call("getVaults");
+
+                this.state.vaults = Object.values(vaults);
+            },
+
+            /**
+             * Store passwords in volatile storage.
+             */
+            async cachePasswords() {
+                await this.props.rpc.call("storeVolatile", ["passwords", this.state.passwords]);
+            },
+
+            async deleteWallet(id) {
                 const vault = this.state.vaults.find( vault => vault.id === id);
 
                 if (!vault) {
                     return;
                 }
 
-                const unlockModal = riot.component(PopupDialogUnlockVault)(this.root.appendChild(document.createElement("DIV")), {});
+                const confirm = await this.confirm(`Delete wallet ${vault.title} (ID: ${vault.id})?`,
+                        "All keys in this wallet will be deleted. Unless you have a backup this wallet is gone forever.");
 
-                const unlockRet = await unlockModal.showModal();
-
-                if (!unlockRet) {
+                if (!confirm) {
                     return;
                 }
 
-                const wallet = new Wallet(unlockRet.password);
+                await this.props.rpc.call("deleteVault", [vault]);
+
+                this.update({isLoading: true});
+
+                await this.getVaults();
+
+                this.update({isLoading: false});
+            },
+
+            async confirm(title, message) {
+                const modal = riot.component(PopupDialogConfirm)(this.root.appendChild(document.createElement("DIV")), {title, message});
+                return await modal.showModal();
+            },
+
+            lockWallet(id) {
+                delete this.state.passwords[id];
+
+                this.cachePasswords();
+
+                this.update();
+            },
+
+            async manageWallet(id) {
+                const vault = this.state.vaults.find( vault => vault.id === id);
+
+                if (!vault) {
+                    return;
+                }
+
+                if (!this.state.passwords[id]) {
+                    const unlockModal = riot.component(PopupDialogUnlockVault)(this.root.appendChild(document.createElement("DIV")), {});
+
+                    const unlockRet = await unlockModal.showModal();
+
+                    if (!unlockRet || !unlockRet.password) {
+                        return;
+                    }
+
+                    this.state.passwords[id] = unlockRet.password;
+                }
+
+                this.update({isLoading: true});
+
+                // Sleep to allow the GUI to update
+                //
+                await this.sleep(1);
+
+                let wallet;
 
                 try {
+                    wallet = new Wallet(this.state.passwords[id]);
+
                     wallet.load(vault);
                 }
                 catch(e) {
-                    console.error("Could not open wallet");
-                    this.update({error: "Could not open wallet"});
+                    delete this.state.passwords[id];
+                    console.error("Could not open wallet", e);
+                    this.showError("Could not open wallet", "Please try again with another password.");
+                    return;
+                }
+                finally {
+                    this.update({isLoading: false});
+                }
+
+                this.cachePasswords();
+
+                const manageCallback = async (error, newPassword) => {
+                    delete this.state.wallet;
+
+                    if (error) {
+                        this.update({severeError: error});
+                        return;
+                    }
+
+                    // In case password got changed.
+                    //
+                    if (newPassword && newPassword !== this.state.passwords[id]) {
+                        this.state.passwords[id] = newPassword;
+                        await this.cachePasswords();
+                    }
+
+                    await this.getVaults();
+
+                    this.update({display: "wallets"});
+                };
+
+                this.update({wallet, display: "manage", manageCallback});
+            },
+
+            async createVault() {
+                const title = this.$("#wallettitle").value;
+                const password = this.$("#walletpassword").value;
+
+                if (title.length < 1) {
+                    this.update({error: "Too short wallet title"});
                     return;
                 }
 
-                const manageModal = riot.component(PopupDialogManageWallet)(this.root.appendChild(document.createElement("DIV")), {wallet, rpc: this.props.rpc});
-
-                const manageRet = await manageModal.showModal();
-
-                if (manageRet?.wallet) {
-                    const vault = wallet.export();
-                    const result = await this.props.rpc.call("saveVault", [vault]);
-                    this.getVaults();
+                if (title.length > 30) {
+                    return;
                 }
-            },
-            async newVault(e) {
-                e.preventDefault();
 
-                const m = riot.component(PopupDialogNewWallet)(this.root.appendChild(document.createElement("DIV")), {});
-
-                const ret = await m.showModal();
-
-                if (ret) {
-                    const password = ret.password;
-                    const title = ret.title;
-                    const rv = new Uint8Array(8);
-                    self.crypto.getRandomValues(rv);
-                    const id = rv.toString().split(",").map( n => parseInt(n).toString(16).padStart(2, "0") ).join("");
-
-                    if (this.state.vaults[id]) {
-                        throw new Error("Reuse of ID error.");
-                    }
-
-                    const wallet = new Wallet(password, title, id);
-
-                    const vault = wallet.export();
-
-                    const result = await this.props.rpc.call("saveVault", [vault]);
-
-                    if (!result) {
-                        throw new Error("Could not save vault");
-                    }
-
-                    this.getVaults();
+                if (password.length < this.minlen) {
+                    this.update({error: "Too short password"});
+                    return;
                 }
-            },
 
-
-
-
-
-
-
-
-
-
-            async unlockDialog(e) {
-                e.preventDefault();
-                const index = Number(e.target.id.split('_')[2]);
-
-                const m = riot.component(AppDialogUnlockVault)(this.root.appendChild(document.createElement("DIV")), {});
-
-                const ret = await m.showModal();
-
-
-                if (ret) {
-                    const password = ret.password;
-
-                    try {
-                        const wallet = await this.props.app.getVaultManager().unlockWallet(index, password);
-                        this.update({
-                            vaults: this.props.app.getVaultManager().getVaults(),
-                        });
-                    }
-                    catch(e) {
-                        this.showError(e);
-                        return;
-                    }
+                if (password.length > 30) {
+                    return;
                 }
-            },
-            lock(e) {
-                e.preventDefault();
 
-                const index = Number(e.target.id.split('_')[2]);
-                this.props.app.getVaultManager().lockWallet(index);
-                this.update({
-                    vaults: this.props.app.getVaultManager().getVaults(),
+                this.update({error: "", isLoading: true});
+
+                // Sleep to allow the GUI to update
+                //
+                await this.sleep(1);
+
+                const rv = new Uint8Array(8);
+                self.crypto.getRandomValues(rv);
+                const id = rv.toString().split(",").map( n => parseInt(n).toString(16).padStart(2, "0") ).join("");
+
+                if (this.state.vaults[id]) {
+                    this.update({error: "Reuse of ID error", isLoading: false});
+                    throw new Error("Reuse of ID error.");
+                }
+
+                const wallet = new Wallet(password, title, id);
+
+                const vault = wallet.export();
+
+                const result = await this.props.rpc.call("saveVault", [vault]);
+
+                if (!result) {
+                    throw new Error("Could not save vault");
+                }
+
+                this.state.passwords[id] = password;
+
+                this.cachePasswords();
+
+                await this.getVaults();
+
+                this.update({display: "wallets", isLoading: false});
+            },
+
+            async sleep(ms) {
+                return new Promise( resolve => {
+                    setTimeout(resolve, ms);
                 });
             },
-            showError(e) {
-                this.update({
-                    error: e.message,
-                });
-            }
+
+            cancel() {
+                this.update({display: "wallets"});
+            },
+
+            async showError(title, message) {
+                const modal = riot.component(PopupDialogError)(this.root.appendChild(document.createElement("DIV")), {title, message});
+                await modal.showModal();
+            },
         }
     </script>
-    <style>
-        /*#wallets {
-            display: block;
-            overflow-y: scroll;
-        }*/
-        button {
-            display: block;
-            border: solid 1px black;
-        }
-    </style>
 </popup-wallets>

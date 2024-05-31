@@ -15,11 +15,29 @@ export type WalletConfig = {
 export const PASSWORD_MIN_LENGTH = 1;
 
 export type TabState = {
+    tabId: number,
+
+    /**
+     * Set to true when the content script has been successfully injected,
+     * which happens when the tab is registered. */
     activated: boolean,
+
+    /**
+     * Set when the auth process begins, and is unset when
+     * the auth process ends either when accepted or when rejected.
+     */
     authRequestId?: number,
+
+    /** Set to true when auth process is accepted */
     authed: boolean,
+
+    /** Title of the tab window at the time it was registered */
     title: string,
+
+    /** URL of the tab window at the time it was registered */
     url: string,
+
+    /** error can get set when registering the tab */
     error?: string,
 };
 

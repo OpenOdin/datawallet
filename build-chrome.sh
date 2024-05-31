@@ -23,4 +23,4 @@ npx webpack -c webpack.content-script-config.js
 
 npx webpack -c ./webpack.popup-config.js && cp ./src/extension/popup/popup.html ./dist
 
-cp ./src/extension/manifest.json ./dist && cp -r ./src/extension/icons ./dist
+cp ./src/extension/manifest.json ./dist && cp -r ./src/extension/icons ./src/extension/popup/gfx ./dist

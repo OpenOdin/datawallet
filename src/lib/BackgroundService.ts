@@ -20,13 +20,17 @@ type Tab = {
     id: number,
 };
 
+type Port = any;
+
 export class BackgroundService {
     protected tabsState: TabsState = {};
+    protected tabsPort: {[tabId: string]: [Port, RPC]} = {};
     protected browserHandle: typeof browser | typeof chrome;
     protected authRequests: ((walletKeyPairs?: WalletKeyPair[]) => void)[] = [];
-    protected authRequestIdCounter = 0;
+    protected authRequestIdCounter = 1;
     protected vaults: Vaults = {};
     protected openOdinServers: {[rpcId: string]: OpenOdinRPCServer} = {};
+    protected volatileCache: {[key: string]: any} = {};
 
     // This is set when the popup is open
     //
@@ -38,7 +42,7 @@ export class BackgroundService {
         this.loadVaults();
     }
 
-    public registerContentScriptRPC(rpc: RPC, port: any) {
+    public registerContentScriptRPC(rpc: RPC, port: Port) {
         // When running in Chrome we need to run single threaded,
         // the service worker is the thread.
         //
@@ -84,14 +88,15 @@ export class BackgroundService {
             // Resolve any prior auth request as denied.
             this.denyAuth(tabId);
 
-            this.authRequests[this.authRequestIdCounter] = (keyPairs?: WalletKeyPair[]) => { resolve && resolve(keyPairs) };
-
             const authRequestId = this.authRequestIdCounter++;
+
+            this.authRequests[authRequestId] = (keyPairs?: WalletKeyPair[]) => { resolve && resolve(keyPairs) };
+
+            this.tabsState[tabId].authRequestId = authRequestId;
+            this.tabsPort[tabId] = [port, rpc];
 
             const p = new Promise<WalletKeyPair[] | undefined>( (resolveInner) => {
                 resolve = resolveInner;
-
-                this.tabsState[tabId].authRequestId = authRequestId;
             });
 
             this.popupRPC?.call("beginAuth");
@@ -122,9 +127,13 @@ export class BackgroundService {
         rpc.onCall("getState", this.getState);
         rpc.onCall("acceptAuth", this.acceptAuth);
         rpc.onCall("denyAuth", this.denyAuth);
+        rpc.onCall("closeAuth", this.closeAuth);
         rpc.onCall("getVaults", this.getVaults);
         rpc.onCall("saveVault", this.saveVault);
+        rpc.onCall("deleteVault", this.deleteVault);
         rpc.onCall("newKeyPair", this.newKeyPair);
+        rpc.onCall("storeVolatile", this.storeVolatile);
+        rpc.onCall("getVolatile", this.getVolatile);
 
         this.popupRPC = rpc;
     }
@@ -153,9 +162,26 @@ export class BackgroundService {
         try {
             this.vaults[vault.id] = vault;
 
-            const value = JSON.stringify(this.vaults);
+            const vaultsJSON = JSON.stringify(this.vaults);
 
-            await this.browserHandle.storage.local.set({vaults: value});
+            await this.browserHandle.storage.local.set({vaults: vaultsJSON});
+        }
+        catch(e) {
+            console.error(e);
+
+            return false;
+        }
+
+        return true;
+    };
+
+    protected deleteVault = async (vault: Vault): Promise<boolean> => {
+        try {
+            delete this.vaults[vault.id];
+
+            const vaultsJSON = JSON.stringify(this.vaults);
+
+            await this.browserHandle.storage.local.set({vaults: vaultsJSON});
         }
         catch(e) {
             console.error(e);
@@ -182,6 +208,18 @@ export class BackgroundService {
         resolve && resolve();
     };
 
+    protected closeAuth = (tabId: number) => {
+        const [port, rpc] = this.tabsPort[tabId] ?? [];
+
+        port?.disconnect();
+
+        this.unregisterTab(tabId);
+
+        if (rpc) {
+            this.unregisterContentScriptRPC(rpc);
+        }
+    };
+
     protected acceptAuth = (tabId: number, keyPairs: WalletKeyPair[]) => {
         const authRequestId = this.tabsState[tabId].authRequestId;
 
@@ -201,7 +239,7 @@ export class BackgroundService {
     };
 
     //eslint-disable-next-line @typescript-eslint/no-unused-vars
-    protected getState = async (tabId: number): Promise<TabsState> => {
+    protected getState = async (): Promise<TabsState> => {
         return this.tabsState;
     };
 
@@ -222,6 +260,7 @@ export class BackgroundService {
 
         if (!tabState) {
             this.tabsState[tabId] = {
+                tabId,
                 activated: false,
                 authed: false,
                 authRequestId: undefined,
@@ -230,6 +269,8 @@ export class BackgroundService {
             };
         }
         else {
+            // TODO: apps can change URL without reloading. Need to take this into account.
+            //
             if (tabState.url !== url) {
                 this.tabsState[tabId].activated = false;
 
@@ -257,6 +298,7 @@ export class BackgroundService {
 
     protected unregisterTab(tabId: number) {
         delete this.tabsState[tabId];
+        delete this.tabsPort[tabId];
 
         this.popupRPC?.call("unregisterTab", [tabId]);
     }
@@ -289,6 +331,18 @@ export class BackgroundService {
     protected async getTab(): Promise<Tab | undefined> {
         return (await this.browserHandle.tabs.query({active: true, currentWindow: true}))[0];
     }
+
+    /**
+     * Cache volatile data which lives as long as the background script is kept alive.
+     *
+     */
+    protected storeVolatile = async (key: string, value: any) => {
+        this.volatileCache[key] = value;
+    };
+
+    protected getVolatile = async (key: string) => {
+        return this.volatileCache[key];
+    };
 
     protected newKeyPair = async (): Promise<WalletKeyPair> => {
         const keyPair = Crypto.GenKeyPair();
