@@ -135,7 +135,7 @@
             async deleteKeyPair(index) {
                 const keyPair = this.state.keyPairs[index];
 
-                const confirm = await this.confirm(`Delete key pair`, "You will loose this key pair 4-ever if you press OK");
+                const confirm = await this.confirm(`Delete key pair`, "You will lose this key pair 4-ever if you press OK");
 
                 if (!confirm) {
                     return;
