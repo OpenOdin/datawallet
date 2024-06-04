@@ -17,3 +17,12 @@ npm run build-chrome
 ```
 
 Open `./dist/manifest.json` as a temporary extension in developer mode.  
+
+## Release
+_Tags_ are inspired by the SemVer.org convention. The version is expected to match the following regular expression:
+```
+[0-9]+.[0-9]+.[0-9]+
+```
+
+Create a new tag from _GitHub_ so that the artifacts get automatically built by _GitHub Action_.  
+To do so, draft a new release here: [https://github.com/OpenOdin/datawallet/releases/new](https://github.com/OpenOdin/datawallet/releases/new).
