@@ -48,12 +48,12 @@ jobs:
       uses: fnkr/github-action-ghr@v1
       if: ${{ github.ref_type == 'tag' }}
       env:        
-        GHR_PATH: $GITHUB_WORKSPACE/datawallet-firefox.tar.xz
+        GHR_PATH: /home/runner/work/datawallet/datawallet/datawallet-firefox.tar.xz
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Release_Chrome
       uses: fnkr/github-action-ghr@v1
       if: ${{ github.ref_type == 'tag' }}
       env:        
-        GHR_PATH: $GITHUB_WORKSPACE/datawallet-chrome.tar.xz
+        GHR_PATH: /home/runner/work/datawallet/datawallet/datawallet-chrome.tar.xz
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
