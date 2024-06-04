@@ -38,25 +38,25 @@ jobs:
         ls -lhat .
         npm run build-firefox        
         mv ./dist ./datawallet-firefox
-        tar czvf "$GITHUB_WORKSPACE/datawallet-firefox.tar.xz" ./datawallet-firefox
-  
+        zip -r "$GITHUB_WORKSPACE/datawallet-firefox.zip" ./datawallet-firefox
+        
     - name: Build_Chrome
       run: |
         ls -lhat .
         npm run build-chrome       
         mv ./dist ./datawallet-chrome
-        tar czvf "$GITHUB_WORKSPACE/datawallet-chrome.tar.xz" ./datawallet-chrome
+        zip -r "$GITHUB_WORKSPACE/datawallet-chrome.zip" ./datawallet-chrome
 
     - name: Release_Firefox
       uses: fnkr/github-action-ghr@v1
       if: ${{ github.ref_type == 'tag' }}
       env:        
-        GHR_PATH: /home/runner/work/datawallet/datawallet/datawallet-firefox.tar.xz
+        GHR_PATH: /home/runner/work/datawallet/datawallet/datawallet-firefox.zip
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Release_Chrome
       uses: fnkr/github-action-ghr@v1
       if: ${{ github.ref_type == 'tag' }}
       env:        
-        GHR_PATH: /home/runner/work/datawallet/datawallet/datawallet-chrome.tar.xz
+        GHR_PATH: /home/runner/work/datawallet/datawallet/datawallet-chrome.zip
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
