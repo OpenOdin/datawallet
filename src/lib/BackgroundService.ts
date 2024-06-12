@@ -9,6 +9,8 @@ import {
     TabsState,
     Vault,
     Vaults,
+    AppName,
+    AppVersion,
 } from "./types";
 
 declare const browser: any;
@@ -49,7 +51,8 @@ export class BackgroundService {
         const singleThreaded = typeof(browser) === "undefined";
         const nrOfWorkers = 1;
 
-        const openOdinRPCServer = new OpenOdinRPCServer(rpc, nrOfWorkers, singleThreaded);
+        const openOdinRPCServer = new OpenOdinRPCServer(rpc, nrOfWorkers, singleThreaded,
+            AppName, AppVersion);
 
         this.openOdinServers[rpc.getId()] = openOdinRPCServer;
 
