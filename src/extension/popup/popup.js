@@ -33,6 +33,7 @@ async function main() {
 
     const rpcId = "0";  // This is not required to be random from popup.
 
+    //eslint-disable-next-line no-undef
     const browserHandle = typeof(browser) !== "undefined" ? browser : chrome;
 
     // Connect to background-script

@@ -10,6 +10,13 @@
                 {props.message}
             </div>
 
+            <div each={checkbox in props.checkboxes}
+                class="p-4 border rounded border-gray-800 bg-gray-200">
+                {checkbox.label}&nbsp;
+                <input type="checkbox"
+                    onclick={() => state.checkboxes[checkbox.name] = !state.checkboxes[checkbox.name]} />
+            </div>
+
             <div
                 class="flex flex-row justify-between mt-6">
                 <button
@@ -30,12 +37,16 @@
         export default {
             ok() {
                 thisRef.unmount();
-                thisRef.state.resolve(true);
+                thisRef.state.resolve({result: true, checkboxes: thisRef.state.checkboxes});
             },
 
             cancel() {
                 thisRef.unmount();
-                thisRef.state.resolve(false);
+                thisRef.state.resolve({result: false});
+            },
+
+            onBeforeMount(props, state) {
+                state.checkboxes = {};
             },
 
             onMounted(props, state) {

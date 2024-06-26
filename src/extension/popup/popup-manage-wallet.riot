@@ -137,7 +137,7 @@
 
                 const confirm = await this.confirm(`Delete key pair`, "You will lose this key pair 4-ever if you press OK");
 
-                if (!confirm) {
+                if (!confirm.result) {
                     return;
                 }
 

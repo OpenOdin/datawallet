@@ -37,7 +37,7 @@
             key={state.selectedTabId}
             rpc={props.rpc}
             tab-state={state.tabState}
-            callback={this.callback}
+            updateParent={this.updateParent}
             vaults={state.vaults}
             tab-id={state.selectedTabId}>
         </popup-connection>
@@ -58,12 +58,12 @@
                     selectedTabId: props.tabId,
                 };
 
-                props.rpc.onCall("beginAuth", () => this.updateState() );
+                props.rpc.onCall("update", () => this.updateState() );
 
                 this.updateState();
             },
 
-            callback() {
+            updateParent() {
                 this.updateState();
             },
 

@@ -14,6 +14,24 @@ export type WalletConfig = {
     keyPairs: WalletKeyPair[],
 };
 
+export type PermissionAction = "handshake" | "sign";
+
+export type PermissionRequest = {
+    id: string,
+    hashes: string[],
+    action: PermissionAction,
+    title: string,
+    details?: any,
+    description: string,
+};
+
+export type PermissionResponse = {
+    id: string,
+    hashes: string[],
+    allow: boolean,
+    save: number,
+};
+
 // TODO set to 8
 export const PASSWORD_MIN_LENGTH = 1;
 
@@ -42,6 +60,8 @@ export type TabState = {
 
     /** error can get set when registering the tab */
     error?: string,
+
+    permissionRequests: {[id: string]: PermissionRequest};
 };
 
 export type TabsState = {

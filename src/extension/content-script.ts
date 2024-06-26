@@ -27,7 +27,7 @@ function getBgPort(rpcId: string): Port | undefined {
     }
     else if (bgPort === undefined) {
         // Open port to background-script.
-        // If extensions is not available then we expect the ocDisconnect event to be fired.
+        // If extensions is not available then we expect the onDisconnect event to be fired.
         //
         bgPort = browserHandle.runtime.connect({name: `openodin-content-to-background_${rpcBaseId}`}) as Port;
 
