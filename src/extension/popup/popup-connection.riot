@@ -38,6 +38,27 @@
 
                 <div>This site is authenticated</div>
 
+                <div each={pr in Object.values(props.tabState.permissionRequests)}>
+                    <h1>action: {pr.action}</h1>
+                    <div>{pr.title}</div>
+                    <div>{pr.description}</div>
+
+                    <button
+                        class="px-4 shadow cursor-pointer border border-green-800 rounded bg-green-600 hover:bg-green-800"
+                        onclick={ () => allowPermissionRequest(pr) }>
+                        Allow once</button>
+
+                    <button
+                        class="px-4 shadow cursor-pointer border border-green-800 rounded bg-green-600 hover:bg-green-800"
+                        onclick={ () => allowPermissionRequest(pr, 1) }>
+                        Allow for session</button>
+
+                    <button
+                        class="px-4 shadow cursor-pointer border border-red-800 rounded bg-red-600 hover:bg-red-800"
+                        onclick={ () => denyPermissionRequest(pr) }>
+                        Deny</button>
+                </div>
+
                 <button
                     onclick={logout}
                     class="px-8 py-3 mt-6 border border-red-800 font-bold text-xl shadow cursor-pointer rounded hover:bg-red-800 bg-red-600">
@@ -121,27 +142,54 @@
                 const keys = keyPairs.map( kp => this.formatHex(kp.publicKey) );
 
                 const confirm = await this.confirm(`Authenticate using wallet ${vault.title} (ID: ${vault.id})?`,
-                        `The following keys will be available for the site to sign with, the first key will be used for handshake: ${keys}`);
+                        `The following keys will be available for the site to sign with, the first key will be used for handshake: ${keys}`,
+                        [{label: "Verify each signing action", name: "strict"}]);
 
-                if (!confirm) {
+                if (!confirm.result) {
                     return;
                 }
 
-                await this.props.rpc.call("acceptAuth", [this.props.tabId, keyPairs]);
+                const strictVerify = Boolean(confirm.checkboxes.strict);
 
-                this.props.callback();
+                await this.props.rpc.call("acceptAuth", [this.props.tabId, keyPairs, strictVerify]);
+
+                this.props.updateParent();
             },
 
             denyAuth() {
                 this.props.rpc.call("denyAuth", [this.props.tabId]);
 
-                this.props.callback();
+                this.props.updateParent();
+            },
+
+            allowPermissionRequest(pr, save) {
+                const response = {
+                    id: pr.id,
+                    hashes: pr.hashes,
+                    allow: true,
+                    save,
+                };
+
+                this.props.rpc.call("permissionResponse", [this.props.tabId, response]);
+
+                this.props.updateParent();
+            },
+
+            denyPermissionRequest(pr) {
+                const response = {
+                    id: pr.id,
+                    allow: false,
+                };
+
+                this.props.rpc.call("permissionResponse", [this.props.tabId, response]);
+
+                this.props.updateParent();
             },
 
             logout() {
                 this.props.rpc.call("closeAuth", [this.props.tabId]);
 
-                this.props.callback();
+                this.props.updateParent();
             },
 
             async cachePasswords() {
@@ -159,8 +207,8 @@
                 await modal.showModal();
             },
 
-            async confirm(title, message) {
-                const modal = riot.component(PopupDialogConfirm)(this.root.appendChild(document.createElement("DIV")), {title, message});
+            async confirm(title, message, checkboxes) {
+                const modal = riot.component(PopupDialogConfirm)(this.root.appendChild(document.createElement("DIV")), {title, message, checkboxes});
                 return await modal.showModal();
             },
 

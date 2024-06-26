@@ -1,7 +1,14 @@
 import {
+    HandshakeFactoryConfig,
+} from "pocket-messaging";
+
+import {
     OpenOdinRPCServer,
     Crypto,
     RPC,
+    AuthFactoryConfig,
+    DataModelInterface,
+    Hash,
 } from "openodin";
 
 import {
@@ -11,6 +18,8 @@ import {
     Vaults,
     AppName,
     AppVersion,
+    PermissionRequest,
+    PermissionResponse,
 } from "./types";
 
 declare const browser: any;
@@ -33,6 +42,8 @@ export class BackgroundService {
     protected vaults: Vaults = {};
     protected openOdinServers: {[rpcId: string]: OpenOdinRPCServer} = {};
     protected volatileCache: {[key: string]: any} = {};
+    protected permissionPromises: {[id: string]: (permissionResponse: PermissionResponse) => void} = {};
+    protected savedSessionPermissions: {[tabId: string]: {[hash: string]: boolean}} = {};
 
     // This is set when the popup is open
     //
@@ -45,6 +56,12 @@ export class BackgroundService {
     }
 
     public registerContentScriptRPC(rpc: RPC, port: Port) {
+        const tabId = port.sender.tab.id;
+
+        if (tabId === undefined) {
+            throw new Error("tabId not passed with Port object");
+        }
+
         // When running in Chrome we need to run single threaded,
         // the service worker is the thread.
         //
@@ -56,18 +73,100 @@ export class BackgroundService {
 
         this.openOdinServers[rpc.getId()] = openOdinRPCServer;
 
-        // On begin auth process.
-        //
-        openOdinRPCServer.onAuth( async () => {
-            const tabId = await this.getTabId();
+        openOdinRPCServer.onAuthFactoryCreate( async (authFactoryConfig: AuthFactoryConfig): Promise<boolean> => {
+            const rv = new Uint8Array(8);
+            self.crypto.getRandomValues(rv);
+            const id = Buffer.from(rv).toString("hex");
 
-            if (tabId === undefined) {
-                return {
-                    keyPairs: [],
-                    error: "Could not get tabId of active tab",
-                };
+            const handshakeFactoryConfig = authFactoryConfig as unknown as HandshakeFactoryConfig;
+
+            const serverPublicKey = handshakeFactoryConfig.serverPublicKey;
+            const host = handshakeFactoryConfig.socketFactoryConfig.client?.clientOptions.host;
+            const port = handshakeFactoryConfig.socketFactoryConfig.client?.clientOptions.port;
+
+            const endpoint = `${host}:${port}`;
+
+            const action = "handshake";
+
+            const hashes = [
+                Hash([action, endpoint]).toString("hex"),
+            ];
+
+            const permissionRequest: PermissionRequest = {
+                id,
+                hashes,
+                action,
+                title: "Site is requesting to handshake as you",
+                description: `Do you accept site to handshake to the endpoint ${endpoint} who has the expected server public key of ${serverPublicKey?.toString("hex")}?`,
+            };
+
+            // Check if permission is already allowed.
+            //
+            if (!this.checkPermission(tabId, permissionRequest)) {
+                const permissionResponse = await this.requestPermission(tabId, permissionRequest);
+
+                if (!permissionResponse || !permissionResponse.allow) {
+                    return false;
+                }
+
+                // Is allowed.
+                // Check if to save answer.
+                //
+                if (permissionResponse.save > 0) {
+                    this.savePermission(tabId, permissionResponse);
+                }
+
+                // Fall through
             }
 
+            return true;
+        });
+
+        openOdinRPCServer.onSign( async (dataModels: DataModelInterface[]): Promise<boolean> => {
+            const rv = new Uint8Array(8);
+            self.crypto.getRandomValues(rv);
+            const id = Buffer.from(rv).toString("hex");
+
+            const action = "sign";
+
+            const hashes = [
+                Hash([action]).toString("hex"),
+            ];
+
+            const permissionRequest: PermissionRequest = {
+                id,
+                hashes,
+                action,
+                title: "Site is requesting to sign data nodes as you",
+                description: `Do you accept site to sign ${dataModels.length} data nodes using your private key(s)?`,
+            };
+
+            // Check if permission is already allowed.
+            //
+            if (!this.checkPermission(tabId, permissionRequest)) {
+                const permissionResponse = await this.requestPermission(tabId, permissionRequest);
+
+                if (!permissionResponse || !permissionResponse.allow) {
+                    return false;
+                }
+
+                // Is allowed.
+                // Check if to save answer.
+                //
+                if (permissionResponse.save > 0) {
+                    this.savePermission(tabId, permissionResponse);
+                }
+
+                // Fall through
+            }
+
+            return true;
+        });
+
+        // On begin auth process.
+        // Called on rpc.call("auth")
+        //
+        openOdinRPCServer.onAuth( async () => {
             port.onDisconnect.addListener( () => {
                 this.unregisterTab(tabId);
             });
@@ -102,7 +201,7 @@ export class BackgroundService {
                 resolve = resolveInner;
             });
 
-            this.popupRPC?.call("beginAuth");
+            this.popupRPC?.call("update");
 
             const keyPairs = (await p) as WalletKeyPair[] | undefined;
             const error = keyPairs === undefined ? "Auth denied" : undefined;
@@ -131,6 +230,7 @@ export class BackgroundService {
         rpc.onCall("acceptAuth", this.acceptAuth);
         rpc.onCall("denyAuth", this.denyAuth);
         rpc.onCall("closeAuth", this.closeAuth);
+        rpc.onCall("permissionResponse", this.permissionResponse);
         rpc.onCall("getVaults", this.getVaults);
         rpc.onCall("saveVault", this.saveVault);
         rpc.onCall("deleteVault", this.deleteVault);
@@ -214,6 +314,8 @@ export class BackgroundService {
     protected closeAuth = (tabId: number) => {
         const [port, rpc] = this.tabsPort[tabId] ?? [];
 
+        delete this.savedSessionPermissions[tabId];
+
         port?.disconnect();
 
         this.unregisterTab(tabId);
@@ -223,12 +325,105 @@ export class BackgroundService {
         }
     };
 
-    protected acceptAuth = (tabId: number, keyPairs: WalletKeyPair[]) => {
+    /**
+     * Check if permission is already allowed.
+     */
+    protected checkPermission(tabId: number, permissionRequest: PermissionRequest) {
+        const savedHashes = this.savedSessionPermissions[tabId] ?? {};
+
+        // Check if to allow all
+        //
+        if (savedHashes["*"]) {
+            return true;
+        }
+
+        const hashes = permissionRequest.hashes;
+
+        const hashesLength = hashes.length;
+        for (let i=0; i<hashesLength; i++) {
+            const hash = hashes[i];
+
+            if (savedHashes[hash]) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Save permission for session or for-ever.
+     */
+    protected savePermission(tabId: number, permissionResponse: PermissionResponse) {
+        const savedHashes = this.savedSessionPermissions[tabId] ?? {};
+
+        // Note: we are only saving for session as for now.
+        //
+
+        this.savedSessionPermissions[tabId] = savedHashes;
+        permissionResponse.hashes.forEach( hash => savedHashes[hash] = true );
+    }
+
+    protected async requestPermission(tabId: number, permissionRequest: PermissionRequest): Promise<PermissionResponse> {
+        this.tabsState[tabId].permissionRequests[permissionRequest.id] = permissionRequest;
+
+        let resolve: ((permissionResponse: PermissionResponse) => void) | undefined = undefined;
+
+        const promise = new Promise<PermissionResponse>( resolve2 => {
+            resolve = resolve2;
+        });
+
+        if (!resolve) {
+            throw new Error("Missing resolve");
+        }
+
+        this.permissionPromises[permissionRequest.id] = resolve;
+
+        this.popupRPC?.call("update");
+
+        //eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const [port, rpc] = this.tabsPort[tabId] ?? [];
+
+        rpc?.call("attentionNeeded", [Object.values(this.tabsState[tabId].permissionRequests).length]);
+
+        return promise;
+    }
+
+    protected permissionResponse = (tabId: number, permissionResponse: PermissionResponse) => {
+        delete this.tabsState[tabId].permissionRequests[permissionResponse.id];
+
+        const resolve = this.permissionPromises[permissionResponse.id];
+
+        resolve?.(permissionResponse);
+
+        //eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const [port, rpc] = this.tabsPort[tabId] ?? [];
+
+        rpc?.call("attentionNeeded", [Object.values(this.tabsState[tabId].permissionRequests).length]);
+
+        this.popupRPC?.call("update");
+    };
+
+    protected acceptAuth = (tabId: number, keyPairs: WalletKeyPair[], strictVerify: boolean) => {
         const authRequestId = this.tabsState[tabId].authRequestId;
 
         if (authRequestId === undefined) {
             return;
         }
+
+        let savedHashes = this.savedSessionPermissions[tabId] ?? {};
+
+        // Set allow all if strictVerify is off
+        //
+        if (strictVerify) {
+            // Make sure to reset previously allowed session permissions.
+            //
+            savedHashes = {};
+        }
+
+        savedHashes["*"] = !strictVerify;
+
+        this.savedSessionPermissions[tabId] = savedHashes;
 
         this.tabsState[tabId].authRequestId = undefined;
 
@@ -241,7 +436,6 @@ export class BackgroundService {
         this.tabsState[tabId].authed = true;
     };
 
-    //eslint-disable-next-line @typescript-eslint/no-unused-vars
     protected getState = async (): Promise<TabsState> => {
         return this.tabsState;
     };
@@ -269,6 +463,7 @@ export class BackgroundService {
                 authRequestId: undefined,
                 title,
                 url,
+                permissionRequests: {},
             };
         }
         else {

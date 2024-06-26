@@ -203,7 +203,7 @@
                 const confirm = await this.confirm(`Delete wallet ${vault.title} (ID: ${vault.id})?`,
                         "All keys in this wallet will be deleted. Unless you have a backup this wallet is gone forever.");
 
-                if (!confirm) {
+                if (!confirm.result) {
                     return;
                 }
 
