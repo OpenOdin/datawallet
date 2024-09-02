@@ -37,15 +37,15 @@ jobs:
         echo ${{ github.workspace }}
         ls -lhat .
         npm run build-firefox        
-        mv ./dist ./datawallet-firefox
-        cd ./datawallet-firefox; zip -r "$GITHUB_WORKSPACE/datawallet-firefox.zip" ./*; mv ./datawallet-firefox.zip ..; cd ..
+        mv ./dist ./datawallet-firefox        
+        cd ./datawallet-firefox; zip -r "$GITHUB_WORKSPACE/datawallet-firefox.zip" ./*; cd ..
         
     - name: Build_Chrome
       run: |
         ls -lhat .
         npm run build-chrome       
         mv ./dist ./datawallet-chrome
-        zip -r "$GITHUB_WORKSPACE/datawallet-chrome.zip" ./datawallet-chrome
+        cd ./datawallet-chrome; zip -r "$GITHUB_WORKSPACE/datawallet-chrome.zip" ./*; cd ..
 
     - name: Release_Firefox
       uses: fnkr/github-action-ghr@v1
