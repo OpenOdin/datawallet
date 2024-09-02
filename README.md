@@ -4,6 +4,15 @@ This is the official [OpenOdin](https://github.com/OpenOdin/) Datawallet browser
 
 With this browser add-on you can authenticate to sites running OpenOdin applications and keeping your cryptographic keys secure.
 
+## Screenshots
+![datawallet-1](https://github.com/user-attachments/assets/d5b961c3-39f5-4b6a-a268-41de7c3ccf2e)
+
+![datawallet-2](https://github.com/user-attachments/assets/854930a1-2f77-47cf-a468-2e408bb4b029)
+
+![datawallet-3](https://github.com/user-attachments/assets/b43e6f06-9cc4-4d30-bdff-1449f1ad4681)
+
+![datawallet-4](https://github.com/user-attachments/assets/26342117-99f4-4d6e-a330-20acb4665227)
+
 ## Development Status
 
 The Datawallet is in a working state and considered beta.
