@@ -1,22 +1,39 @@
-# OpenOdin Data Wallet Browser Extension 
+# OpenOdin Datawallet Browser Extension 
 
-This is the official OpenOdin Data Wallet browser extension for Mozilla Firefox and Google Chrome.
+This is the official [OpenOdin](https://github.com/OpenOdin/) Datawallet browser extension for Mozilla Firefox and Google Chrome.
 
-## Current status
-WARNING: The Data Wallet does currently *not* encrypt wallets stored in browser local stoage.  
-Encryption will be added before any official release.  
+With this browser add-on you can authenticate to sites running OpenOdin applications and keeping your cryptographic keys secure.
 
-Currently the Data Wallet works in Mozilla Firefox and needs to be sideloaded as a temporary extension in developer mode to be used.  
+## Development Status
 
-## Build
+The Datawallet is in a working state and considered beta.
+
+## Install
+
 ```sh
 npm i
+```
+
+## Build for Firefox
+
+```sh
 npm run build-firefox
-# or, for chrome, do:
+```
+
+## Build for Google Chrome
+
+```sh
 npm run build-chrome
 ```
 
-Open `./dist/manifest.json` as a temporary extension in developer mode.  
+## Run in developer mode
+
+Open `./dist/manifest.json` as a temporary extension in developer mode either in Firefox or Chrome (depending for which you built).  
+
+## License
+
+Apache II License.
+
 
 ## Release
 _Tags_ are inspired by the SemVer.org convention. The version is expected to match the following regular expression:
