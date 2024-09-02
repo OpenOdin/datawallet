@@ -1,7 +1,7 @@
 {
     "name": "datawallet",
     "version": "0.3.2",
-    "description": "Official OpenOdin DataWallet",
+    "description": "Official OpenOdin Datawallet",
     "private": false,
     "scripts": {
         "tsc": "npx tsc",

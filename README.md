@@ -45,6 +45,9 @@ Apache II License.
 
 
 ## Release
+
+Auto built releases for Mozilla Firefox and Google Chrome can be found here: [https://github.com/OpenOdin/datawallet/releases](https://github.com/OpenOdin/datawallet/releases)
+
 _Tags_ are inspired by the SemVer.org convention. The version is expected to match the following regular expression:
 ```
 [0-9]+.[0-9]+.[0-9]+
