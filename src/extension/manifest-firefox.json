@@ -1,0 +1,27 @@
+{
+    "manifest_version": 3,
+    "name": "Datawallet",
+    "version": "0.3",
+    "description": "Official OpenOdin Datawallet",
+    "homepage_url": "https://github.com/OpenOdin/datawallet",
+    "icons": {
+        "48": "icons/48.png",
+        "96": "icons/96.png"
+    },
+    "permissions": [
+        "activeTab",
+        "storage",
+        "scripting"
+    ],
+    "content_security_policy":{
+        "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'none';"
+    },
+    "background": {
+        "scripts": ["background-script.js"]
+    },
+    "action": {
+        "default_icon": "icons/32.png",
+        "default_title": "Official OpenOdin Datawallet",
+        "default_popup": "popup.html"
+    }
+}

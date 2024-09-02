@@ -17,7 +17,6 @@
         "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'none';"
     },
     "background": {
-        "scripts": ["background-script.js"],
         "service_worker": "background-script.js"
     },
     "action": {
