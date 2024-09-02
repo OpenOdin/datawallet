@@ -32,8 +32,7 @@ export type PermissionResponse = {
     save: number,
 };
 
-// TODO set to 8
-export const PASSWORD_MIN_LENGTH = 1;
+export const PASSWORD_MIN_LENGTH = 8;
 
 export type TabState = {
     tabId: number,
