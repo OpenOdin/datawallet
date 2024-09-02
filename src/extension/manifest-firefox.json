@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Datawallet",
-    "version": "0.3",
+    "version": "0.4.1",
     "description": "Official OpenOdin Datawallet",
     "homepage_url": "https://github.com/OpenOdin/datawallet",
     "icons": {
@@ -23,5 +23,11 @@
         "default_icon": "icons/32.png",
         "default_title": "Official OpenOdin Datawallet",
         "default_popup": "popup.html"
+    },
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "datawallet@openodin.com",
+            "strict_min_version": "125.0"
+        }
     }
 }

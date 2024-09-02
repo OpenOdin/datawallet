@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Datawallet",
-    "version": "0.3",
+    "version": "0.4.1",
     "description": "Official OpenOdin Datawallet",
     "homepage_url": "https://github.com/OpenOdin/datawallet",
     "icons": {
