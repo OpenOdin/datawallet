@@ -84,8 +84,12 @@
          * @param props {rpc, tabId, tabState}
          */
         export default {
-            async onBeforeMount(props, state) {
-                this.state.passwords = await this.props.rpc.call("getVolatile", ["passwords"]) ?? {};
+            onBeforeMount(props, state) {
+                this.state.passwords = {};
+
+                this.props.rpc.call("getVolatile", ["passwords"]).then( passwords => {
+                    this.state.passwords = passwords ?? {};
+                });
             },
 
             async acceptAuth(id) {
