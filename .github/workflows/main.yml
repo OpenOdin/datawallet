@@ -39,6 +39,7 @@ jobs:
         npm run build-firefox        
         mv ./dist ./datawallet-firefox
         zip -r "$GITHUB_WORKSPACE/datawallet-firefox.zip" ./datawallet-firefox
+        cd ./datawallet-firefox; zip -r "$GITHUB_WORKSPACE/datawallet-firefox.zip" ./*; mv ./datawallet-firefox.zip ..; cd ..
         
     - name: Build_Chrome
       run: |
