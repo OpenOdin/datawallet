@@ -39,10 +39,13 @@ npm run build-chrome
 
 Open `./dist/manifest.json` as a temporary extension in developer mode either in Firefox or Chrome (depending for which you built).  
 
+## Trying it out
+
+Try out the add-on by running the OpenOdin webchat application, follow the instructions here: [https://github.com/OpenOdin/openodin/wiki/How-to-use](https://github.com/OpenOdin/openodin/wiki/How-to-use]
+
 ## License
 
 Apache II License.
-
 
 ## Release
 
