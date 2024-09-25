@@ -5,16 +5,16 @@ import * as riot from "riot";
 
 import { minidenticon } from 'minidenticons'
 
-import PopupMain from "./popup-main.riot";
-import PopupConnection from "./popup-connection.riot";
-import PopupWallets from "./popup-wallets.riot";
-import PopupManageWallet from "./popup-manage-wallet.riot";
+import PopupMain from "./popup-main.js";
+import PopupConnection from "./popup-connection.js";
+import PopupWallets from "./popup-wallets.js";
+import PopupManageWallet from "./popup-manage-wallet.js";
 
 riot.register("popup-connection", PopupConnection);
 riot.register("popup-wallets", PopupWallets);
 riot.register("popup-manage-wallet", PopupManageWallet);
 
-import PopupFront from "./popup-front.riot";
+import PopupFront from "./popup-front.js";
 riot.register("popup-front", PopupFront);
 
 import "./popup.css";

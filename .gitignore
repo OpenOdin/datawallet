@@ -1,3 +1,12 @@
 node_modules
 build
 dist
+popup-connection.js
+popup-dialog-confirm.js
+popup-dialog-error.js
+popup-dialog-import-key.js
+popup-dialog-unlock-vault.js
+popup-front.js
+popup-main.js
+popup-manage-wallet.js
+popup-wallets.js
