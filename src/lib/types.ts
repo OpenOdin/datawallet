@@ -1,5 +1,5 @@
 export const AppName = "OpenOdin DataWallet (official)";
-export const AppVersion = "0.3.2";
+export const AppVersion = "0.4.10";
 
 /**
  * Cryptographic keys are stored as integers so they can be seamlessly serialized to JSON.

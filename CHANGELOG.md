@@ -2,6 +2,9 @@
 
 Note that any version below 1.0.0 can have breaking changes.  
 
+## [0.4.10] - 20240925
+Make builds byte-for-byte reproducible.  
+
 ## [0.4.1] - 20240902
 Decent beta version, ready for public use.  
 
