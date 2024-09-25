@@ -60,3 +60,31 @@ jobs:
       env:        
         GHR_PATH: /home/runner/work/datawallet/datawallet/datawallet-chrome.zip
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Verify_Releases_Reproducibility
+      run: |
+        # Download and extract datawallet-firefox.zip
+        wget "https://github.com/OpenOdin/datawallet/releases/download/${{  github.ref_name  }}/datawallet-firefox.zip"
+        unzip -d datawallet-firefox datawallet-firefox.zip
+
+        # Download and extract datawallet-chrome.zip
+        wget "https://github.com/OpenOdin/datawallet/releases/download/${{  github.ref_name  }}/datawallet-chrome.zip"
+        unzip -d datawallet-chrome datawallet-chrome.zip
+
+        # Download and extract source code
+        wget "https://github.com/OpenOdin/datawallet/archive/refs/tags/${{  github.ref_name  }}.zip"
+        unzip -d src "${{  github.ref_name }}.zip"
+
+        # Enter source directory and prepare
+        cd src/datawallet-"${{github.ref_name}}/"
+        npm i
+
+        # Build Firefox release from source and compare to published release
+        npm run build-firefox
+        diff -rq ./dist ../../datawallet-firefox
+
+        rm -rf ./dist
+
+        # Build Chrome release from source and compare to published release
+        npm run build-chrome
+        diff -rq ./dist ../../datawallet-chrome
