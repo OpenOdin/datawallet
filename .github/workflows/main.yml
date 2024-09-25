@@ -67,13 +67,11 @@ jobs:
         mkdir verification
         cd verification
         
-        # Download and extract datawallet-firefox.zip
-        wget "https://github.com/OpenOdin/datawallet/releases/download/${{  github.ref_name  }}/datawallet-firefox.zip"
-        unzip -d datawallet-firefox datawallet-firefox.zip
+        # Extract datawallet-firefox.zip from previous Release_Firefox step
+        unzip -d datawallet-firefox ../datawallet-firefox.zip
 
-        # Download and extract datawallet-chrome.zip
-        wget "https://github.com/OpenOdin/datawallet/releases/download/${{  github.ref_name  }}/datawallet-chrome.zip"
-        unzip -d datawallet-chrome datawallet-chrome.zip
+        # Extract datawallet-chrome.zip from previous Release_Chrome step
+        unzip -d datawallet-chrome ../datawallet-chrome.zip
 
         # Download and extract source code
         wget "https://github.com/OpenOdin/datawallet/archive/refs/tags/${{  github.ref_name  }}.zip"
