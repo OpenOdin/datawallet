@@ -63,6 +63,10 @@ jobs:
 
     - name: Verify_Releases_Reproducibility
       run: |
+        # Create and start from new directory
+        mkdir verification
+        cd verification
+        
         # Download and extract datawallet-firefox.zip
         wget "https://github.com/OpenOdin/datawallet/releases/download/${{  github.ref_name  }}/datawallet-firefox.zip"
         unzip -d datawallet-firefox datawallet-firefox.zip
