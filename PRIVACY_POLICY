@@ -9,12 +9,12 @@ The OpenOdin Datawallet does not collect URLs, browsing activity, search terms. 
 The OpenOdin Datawallet does not use the native messaging functionality. The Datawallet does not exchange messages with native applications installed on user's systems.
 
 The OpenOdin Datawallet does not collect nor share any data on its own.
-Whenever, and, if the user ever chooses to authenticate with a site using the Datawallet itself (explicitly reported by the Datawallet upon user's interaction with the extension when said functionality is available), then the Datawallet relays connections to that site over WebSocket, and it does so while protecting the user's cryptograhic keys from the third-party site.
-With explicit user's consent the Datawallet can sign, send and fetch data nodes to and from the WebSocket endpoints defined by a third-party application (site) to connect with the application's storage. In no way is that data or any metadata about that data shared anywhere else.
+Whenever, and, if the user ever chooses to authenticate with a website using the Datawallet itself (explicitly reported by the Datawallet upon user's interaction with the extension when said functionality is available), then the Datawallet relays connections to that site over WebSocket, and it does so while protecting the user's cryptograhic keys from the third-party site.
+With explicit user's consent, when the user is browsing a website which supports OpenOdin, the Datawallet can sign, send and fetch data nodes to and from the WebSocket endpoints defined by the website being visited by the user (third-party web application) to connect with the application's storage. In no way is that data or any metadata about that data shared anywhere else.
 
 OpenOdin Datawallet does not communicate with third-party applications, software or websites automatically.
 The OpenOdin Datawallet does NOT automatically reveal itself to visited websites.
-However, if the user clicks on the Datawallet icon in the browser toolbar that will trigger the Datawallet to reveal and enable itself to the site opened in the current tab.
+However, if the user clicks on the Datawallet icon in the browser toolbar that will trigger the Datawallet to reveal and enable itself to the website opened in the current tab.
 
 In case the user has explicitly allowed the Datawallet to run in private browsing sessions (private window), then any keys added and removed from the Datawallet will be reflected in non-private windows. However, no browsing history or search terms are recorded or shared.
 
