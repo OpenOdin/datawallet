@@ -1,4 +1,4 @@
-Last updated: October 3, 2024.
+Last updated: October 8, 2024.
 
 OpenOdin Datawallet allows integration with OpenOdin-enabled applications.
 
@@ -19,9 +19,10 @@ However, if the user clicks on the Datawallet icon in the browser toolbar that w
 In case the user has explicitly allowed the Datawallet to run in private browsing sessions (private window), then any keys added and removed from the Datawallet will be reflected in non-private windows. However, no browsing history or search terms are recorded or shared.
 
 OpenOdin-enabled applications may eventually monitor and log OpenOdin Datawallet information, namely user's Datawallet addresses, which are randomly generated identifiers and, in no way, expose personal information other than said pseudonymous identifiers (randomly generated addresses).
+OpenOdin-enabled applications may also request user's permission to use the OpenOdin Datawallet local storage to maintain user's own preferences and settings on behalf of the application for improved user experience only. User settings are kept on a per-application basis. Applications settings are never shared between other applications.
 
 If some future OpenOdin Datawallet feature requires communication or sharing of data with any third-party service different from what is described, it will be an optional, clearly stated, feature respecting user's consent (opt-in, disabled by default).
 
 Any changes to this policy will result in the change of the "Last updated" date at the top of this document. A copy of the updated document will be openly available, including all its history and changes, as a file titled PRIVACY_POLICY in OpenOdin Datawallet source code repository on GitHub at https://github.com/OpenOdin/datawallet/.
 
-For any questions or concerns, please contact help@openodin.com.
+For any questions or concerns, please contact datawallet@openodin.com.
