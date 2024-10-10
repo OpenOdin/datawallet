@@ -85,6 +85,9 @@ jobs:
         npm run build-firefox
         diff -rq ./dist ../../datawallet-firefox
 
+        # Run Mozilla Add-ons Linter
+        npx addons-linter ./dist
+
         rm -rf ./dist
 
         # Build Chrome release from source and compare to published release
