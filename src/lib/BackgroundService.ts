@@ -1,3 +1,5 @@
+import "setimmediate";
+
 import {
     HandshakeFactoryConfig,
 } from "pocket-messaging";
@@ -6,7 +8,7 @@ import {
     OpenOdinRPCServer,
     Crypto,
     RPC,
-    AuthFactoryConfig,
+    ConnectionConfig,
     DataModelInterface,
     Hash,
 } from "openodin";
@@ -73,16 +75,22 @@ export class BackgroundService {
 
         this.openOdinServers[rpc.getId()] = openOdinRPCServer;
 
-        openOdinRPCServer.onAuthFactoryCreate( async (authFactoryConfig: AuthFactoryConfig): Promise<boolean> => {
+        openOdinRPCServer.onAuthFactoryCreate( async (connection: ConnectionConfig["connection"]):
+            Promise<boolean> =>
+        {
             const rv = new Uint8Array(8);
             self.crypto.getRandomValues(rv);
             const id = Buffer.from(rv).toString("hex");
 
-            const handshakeFactoryConfig = authFactoryConfig as unknown as HandshakeFactoryConfig;
+            const authFactoryConfig = connection.handshake ?? connection.api;
 
-            const serverPublicKey = handshakeFactoryConfig.serverPublicKey;
-            const host = handshakeFactoryConfig.socketFactoryConfig.client?.clientOptions.host;
-            const port = handshakeFactoryConfig.socketFactoryConfig.client?.clientOptions.port;
+            if (!authFactoryConfig) {
+                return false;
+            }
+
+            const serverPublicKey = authFactoryConfig.serverPublicKey;
+            const host = authFactoryConfig.socketFactoryConfig.client?.clientOptions.host;
+            const port = authFactoryConfig.socketFactoryConfig.client?.clientOptions.port;
 
             const endpoint = `${host}:${port}`;
 
