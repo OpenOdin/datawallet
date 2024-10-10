@@ -1,3 +1,5 @@
+import "setimmediate";
+
 import {
     HandshakeFactoryConfig,
 } from "pocket-messaging";

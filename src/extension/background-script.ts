@@ -1,3 +1,5 @@
+import "setimmediate";
+
 import {
     RPC,
 } from "openodin";
